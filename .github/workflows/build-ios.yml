@@ -78,6 +78,8 @@ jobs:
           git clone -q --depth 1 -b "$VK_SDK_TAG" https://github.com/KhronosGroup/Vulkan-Headers "$TMP/Vulkan-Headers"
           git clone -q --depth 1 -b "$VK_SDK_TAG" https://github.com/KhronosGroup/glslang "$TMP/glslang"
           git clone -q --depth 1 -b "$VMA_TAG" https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator "$TMP/VMA"
+          git clone -q --depth 1 -b "$VK_SDK_TAG" https://github.com/KhronosGroup/SPIRV-Headers "$TMP/SPIRV-Headers"
+          git clone -q --depth 1 -b "$VK_SDK_TAG" https://github.com/KhronosGroup/SPIRV-Tools "$TMP/SPIRV-Tools"
 
           # vulkan/, vk_video/
           cp -R "$TMP/Vulkan-Headers/include/." "$INC/"
@@ -86,11 +88,17 @@ jobs:
           (cd "$TMP/glslang/SPIRV"   && find . -name '*.h' | tar -cf - -T -) | (cd "$INC/glslang/SPIRV" && tar -xf -)
           # vma/vk_mem_alloc.h
           cp "$TMP/VMA/include/vk_mem_alloc.h" "$INC/vma/"
+          # spirv/unified1/spirv.hpp11 etc. (needed by sirit/sirit.h)
+          cp -R "$TMP/SPIRV-Headers/include/spirv" "$INC/"
+          # spirv-tools/libspirv.h (included by glslang's SpvTools.h)
+          cp -R "$TMP/SPIRV-Tools/include/spirv-tools" "$INC/"
 
           ls "$INC" "$INC/glslang"
           test -f "$INC/vulkan/vulkan.hpp"
           test -f "$INC/glslang/Public/ShaderLang.h"
           test -f "$INC/vma/vk_mem_alloc.h"
+          test -f "$INC/spirv/unified1/spirv.hpp11"
+          test -f "$INC/spirv-tools/libspirv.h"
 
       - name: Update cores to latest (optional)
         if: ${{ github.event.inputs.update_cores == 'true' }}
