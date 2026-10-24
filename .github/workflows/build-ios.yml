@@ -78,12 +78,14 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks | grep -i iphoneos
 
-      - name: Cache Swift packages
-        uses: actions/cache@v4
-        with:
-          path: build/SourcePackages
-          key: spm-${{ runner.os }}-${{ hashFiles('Folium.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
-          restore-keys: spm-${{ runner.os }}-
+      # The committed Package.resolved pins SharedDependencies to an old commit
+      # that predates its bundled Boost headers (nihstro then fails with
+      # 'boost/fusion/include/adapt_struct.hpp' not found). All packages track
+      # branches, so drop the stale pins and resolve to the latest branch heads.
+      - name: Unpin Swift packages (use latest branch heads)
+        run: |
+          rm -f Folium.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+          rm -rf build/SourcePackages
 
       - name: Resolve Swift packages
         run: |
@@ -92,6 +94,9 @@ jobs:
             -scheme "$SCHEME" \
             -clonedSourcePackagesDirPath build/SourcePackages \
             -skipPackagePluginValidation -skipMacroValidation
+          echo "Resolved package revisions:"
+          cat Folium.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved \
+            | grep -E '"location"|"revision"' || true
 
       - name: Build archive (unsigned)
         run: |
