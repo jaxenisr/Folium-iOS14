@@ -18,6 +18,10 @@ on:
         description: "Publish the IPA as a GitHub release"
         type: boolean
         default: false
+      shared_deps_ref:
+        description: "SharedDependencies commit to build against (blank = latest main)"
+        required: false
+        default: "f384743ac17468ffa91f5326f707018acba9bf18"
 
 permissions:
   contents: write
@@ -30,6 +34,10 @@ env:
   PROJECT: Folium.xcodeproj
   SCHEME: Folium
   CONFIGURATION: Release
+  # Known-good SharedDependencies commit ("Added boost, renamed dds", Oct 17).
+  # The next commit ("Moved magic_enum header file", Oct 24) breaks Mandarine.
+  # Push builds use this; manual runs can override it via the input.
+  SHARED_DEPS_REF: ${{ github.event.inputs.shared_deps_ref || (github.event_name != 'workflow_dispatch' && 'f384743ac17468ffa91f5326f707018acba9bf18') || '' }}
 
 jobs:
   build:
@@ -87,6 +95,15 @@ jobs:
           rm -f Folium.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
           rm -rf build/SourcePackages
 
+      - name: Pin SharedDependencies to a known-good commit
+        if: ${{ env.SHARED_DEPS_REF != '' }}
+        run: |
+          echo "Pinning SharedDependencies to $SHARED_DEPS_REF"
+          REF="$SHARED_DEPS_REF" perl -0pi -e \
+            's|(repositoryURL = "https://github.com/folium-app/SharedDependencies";\s*requirement = \{)[^}]*\}|$1\n\t\t\t\tkind = revision;\n\t\t\t\trevision = $ENV{REF};\n\t\t\t}|' \
+            "$PROJECT/project.pbxproj"
+          grep -A5 'folium-app/SharedDependencies' "$PROJECT/project.pbxproj"
+
       - name: Resolve Swift packages
         run: |
           xcodebuild -resolvePackageDependencies \
@@ -97,6 +114,21 @@ jobs:
           echo "Resolved package revisions:"
           cat Folium.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved \
             | grep -E '"location"|"revision"' || true
+
+      # magic_enum's header has lived at both include/magic_enum.hpp and
+      # include/magic_enum/magic_enum.hpp; the cores use both spellings.
+      # Add a forwarding header for whichever one is missing.
+      - name: magic_enum include compatibility shim
+        run: |
+          INC=build/SourcePackages/checkouts/SharedDependencies/Sources/magic_enum/include
+          if [ -f "$INC/magic_enum/magic_enum.hpp" ] && [ ! -f "$INC/magic_enum.hpp" ]; then
+            echo '#include "magic_enum/magic_enum.hpp"' > "$INC/magic_enum.hpp"
+            echo "Added $INC/magic_enum.hpp"
+          elif [ -f "$INC/magic_enum.hpp" ] && [ ! -f "$INC/magic_enum/magic_enum.hpp" ]; then
+            mkdir -p "$INC/magic_enum"
+            echo '#include "../magic_enum.hpp"' > "$INC/magic_enum/magic_enum.hpp"
+            echo "Added $INC/magic_enum/magic_enum.hpp"
+          fi
 
       - name: Build archive (unsigned)
         run: |
@@ -115,6 +147,7 @@ jobs:
             -destination 'generic/platform=iOS' \
             -archivePath build/Folium.xcarchive \
             -clonedSourcePackagesDirPath build/SourcePackages \
+            -disableAutomaticPackageResolution \
             -skipPackagePluginValidation -skipMacroValidation \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
