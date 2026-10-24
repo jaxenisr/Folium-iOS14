@@ -169,6 +169,20 @@ jobs:
             echo "Added $INC/magic_enum/magic_enum.hpp"
           fi
 
+      # The pinned SharedDependencies renamed dds_ktx.h -> dds-ktx.h, but
+      # Cytrus still does #include <dds_ktx.h>. Add a forwarding header.
+      - name: dds_ktx include compatibility shim
+        run: |
+          INC=build/SourcePackages/checkouts/SharedDependencies/Sources/dds_ktx/include
+          if [ -f "$INC/dds-ktx.h" ] && [ ! -f "$INC/dds_ktx.h" ]; then
+            echo '#include "dds-ktx.h"' > "$INC/dds_ktx.h"
+            echo "Added $INC/dds_ktx.h"
+          elif [ -f "$INC/dds_ktx.h" ] && [ ! -f "$INC/dds-ktx.h" ]; then
+            echo '#include "dds_ktx.h"' > "$INC/dds-ktx.h"
+            echo "Added $INC/dds-ktx.h"
+          fi
+          ls "$INC"
+
       - name: Build archive (unsigned)
         run: |
           EXTRA=()
