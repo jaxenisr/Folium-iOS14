@@ -46,6 +46,13 @@ jobs:
           submodules: recursive
           fetch-depth: 1
 
+      # The Xcode project references AntiqueKit as a *local* package at ../AntiqueKit
+      # (a sibling folder of the repo), so clone it there.
+      - name: Fetch AntiqueKit (local Swift package)
+        run: |
+          git clone --depth 1 https://github.com/jarrodnorwell/AntiqueKit "$GITHUB_WORKSPACE/../AntiqueKit"
+          ls "$GITHUB_WORKSPACE/../AntiqueKit"
+
       - name: Update cores to latest (optional)
         if: ${{ github.event.inputs.update_cores == 'true' }}
         run: |
