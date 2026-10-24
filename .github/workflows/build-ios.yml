@@ -22,6 +22,10 @@ on:
         description: "SharedDependencies commit to build against (blank = latest main)"
         required: false
         default: "f384743ac17468ffa91f5326f707018acba9bf18"
+      txm_jit:
+        description: "Build with TXM JIT support (iOS 26+ on iPhone 15 Pro / A17 Pro and newer). Turn off to build stock Folium."
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -116,6 +120,530 @@ jobs:
           done
           exit $missing
 
+      # ---------------------------------------------------------------------------------
+      # TXM JIT support (iOS 26+, A17 Pro / M4 and newer)
+      #
+      # Folium's JIT memory (oaknut::CodeBlock) flips pages between writable and executable
+      # with mprotect(). TXM devices forbid that, so the first jump into compiled code crashes
+      # with a protection fault and the JIT enabler never sees a request. The patched
+      # CodeBlock instead uses one pool of read+execute memory that it registers with the
+      # enabler (brk #0xf00d, the "universal.js" protocol) and a second writable view of the
+      # same pages. Code is written through the writable view and executed through the other.
+      # Non-TXM devices keep the old behaviour. Disable with the "txm_jit" input.
+      # ---------------------------------------------------------------------------------
+      - name: "TXM JIT: stage patched oaknut CodeBlock"
+        if: ${{ github.event.inputs.txm_jit != 'false' }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/txm"
+          cat > "$RUNNER_TEMP/txm/code_block.hpp" <<'OAKNUT_TXM_EOF'
+          // SPDX-FileCopyrightText: Copyright (c) 2022 merryhime <https://mary.rs>
+          // SPDX-License-Identifier: MIT
+          //
+          // Folium TXM patch: on iOS 26+ devices with TXM (A17 Pro / M4 and newer), memory can no
+          // longer be flipped between writable and executable with mprotect. When a JIT enabler
+          // (StikDebug / StosDebug universal.js) is attached we instead:
+          //   1. mmap one big read+execute pool,
+          //   2. register it with the debugger (brk #0xf00d, x16 = 1, x0 = address, x1 = length),
+          //   3. vm_remap a second, writable view of the same pages,
+          //   4. hand out blocks from that pool: code is *written* through wptr() and *executed*
+          //      through ptr(). Nothing is ever mprotect()'d.
+          // Everything else (non-TXM iPhones, no debugger, macOS, Linux...) behaves exactly as before.
+
+          #pragma once
+
+          #include <algorithm>
+          #include <cstddef>
+          #include <cstdint>
+          #include <new>
+
+          #if defined(_WIN32)
+          #    define NOMINMAX
+          #    include <windows.h>
+          #elif defined(__APPLE__)
+          #    include <TargetConditionals.h>
+          #    include <libkern/OSCacheControl.h>
+          #    include <pthread.h>
+          #    include <sys/mman.h>
+          #    include <unistd.h>
+          #else
+          #    if !defined(_GNU_SOURCE)
+          #        define _GNU_SOURCE
+          #    endif
+          #    include <sys/mman.h>
+          #    include <unistd.h>
+          #endif
+
+          #if defined(__APPLE__) && TARGET_OS_IPHONE && !TARGET_OS_SIMULATOR && defined(__aarch64__)
+          #    define OAKNUT_TXM_JIT 1
+          #    include <mach/mach.h>
+          #    include <mach/vm_map.h>
+          #    include <sys/sysctl.h>
+          #    include <sys/utsname.h>
+
+          #    include <cstdio>
+          #    include <cstdlib>
+          #    include <cstring>
+          #    include <iterator>
+          #    include <map>
+          #    include <mutex>
+
+          extern "C" int csops(pid_t pid, unsigned int ops, void* useraddr, size_t usersize);
+          #endif
+
+          namespace oaknut {
+
+          #if defined(OAKNUT_TXM_JIT)
+          namespace txm_detail {
+
+          // Port of StosDebug's ProcessInfo.detectedTXM (TXM_Checks.swift) using only the hardware
+          // model and OS version, so it works inside a sandbox / LiveContainer.
+          inline bool device_has_txm()
+          {
+              struct utsname info;
+              if (uname(&info) != 0)
+                  return false;
+              const char* hw = info.machine;
+
+              int os_major = 0;
+              char ver[64] = {0};
+              std::size_t ver_len = sizeof(ver);
+              if (sysctlbyname("kern.osproductversion", ver, &ver_len, nullptr, 0) == 0)
+                  os_major = std::atoi(ver);
+
+              if (os_major >= 27)
+                  return std::strcmp(hw, "iPad8,11") != 0 && std::strcmp(hw, "iPad8,12") != 0;
+
+              if (os_major >= 26) {
+                  const bool is_pad = std::strncmp(hw, "iPad", 4) == 0;
+                  const bool is_phone = std::strncmp(hw, "iPhone", 6) == 0;
+                  if (!is_pad && !is_phone)
+                      return false;
+
+                  int major = 0, minor = 0;
+                  if (std::sscanf(hw + (is_pad ? 4 : 6), "%d,%d", &major, &minor) != 2)
+                      return false;
+
+                  double scale = 10.0;
+                  for (int m = minor; m >= 10; m /= 10)
+                      scale *= 10.0;
+                  const double version = major + static_cast<double>(minor) / scale;
+                  return is_pad ? (version >= 14.5) : (version >= 14.2);
+              }
+
+              return false;
+          }
+
+          inline bool process_is_debugged()
+          {
+              int flags = 0;
+              if (csops(getpid(), 0 /* CS_OPS_STATUS */, &flags, sizeof(flags)) != 0)
+                  return false;
+              return (flags & 0x10000000 /* CS_DEBUGGED */) != 0;
+          }
+
+          class Pool {
+          public:
+              static Pool& instance()
+              {
+                  static Pool* pool = acquire();
+                  return *pool;
+              }
+
+              /// True once the pool exists. Until a debugger is attached this keeps re-checking, so a
+              /// JIT enabler that attaches after the app launched (the usual flow) still works.
+              bool active()
+              {
+                  std::lock_guard<std::mutex> lock(m_mutex);
+                  return ensure_locked();
+              }
+
+              // Returns false when the pool can't satisfy the request (caller falls back to mmap).
+              bool allocate(std::size_t size, std::uint32_t*& exec, std::uint32_t*& write)
+              {
+                  size = round_up(size);
+
+                  std::lock_guard<std::mutex> lock(m_mutex);
+                  if (!ensure_locked())
+                      return false;
+                  for (auto it = m_free.begin(); it != m_free.end(); ++it) {
+                      if (it->second < size)
+                          continue;
+                      const std::size_t offset = it->first;
+                      const std::size_t remaining = it->second - size;
+                      m_free.erase(it);
+                      if (remaining != 0)
+                          m_free.emplace(offset + size, remaining);
+                      exec = reinterpret_cast<std::uint32_t*>(m_rx + offset);
+                      write = reinterpret_cast<std::uint32_t*>(m_rw + offset);
+                      return true;
+                  }
+                  std::fprintf(stderr, "[oaknut] TXM JIT pool exhausted (wanted %zu bytes)\n", size);
+                  return false;
+              }
+
+              void release(std::uint32_t* exec, std::size_t size)
+              {
+                  size = round_up(size);
+                  std::size_t offset = static_cast<std::size_t>(reinterpret_cast<std::uint8_t*>(exec) - m_rx);
+
+                  std::lock_guard<std::mutex> lock(m_mutex);
+                  auto next = m_free.lower_bound(offset);
+                  if (next != m_free.begin()) {
+                      auto prev = std::prev(next);
+                      if (prev->first + prev->second == offset) {
+                          offset = prev->first;
+                          size += prev->second;
+                          m_free.erase(prev);
+                      }
+                  }
+                  if (next != m_free.end() && offset + size == next->first) {
+                      size += next->second;
+                      next = m_free.erase(next);
+                  }
+                  m_free.emplace(offset, size);
+              }
+
+          private:
+              // Cytrus needs roughly: CPU JIT 4 cores x 32 MiB + shader JIT, so 192 MiB is plenty.
+              // Pure address space; pages are only committed when touched.
+              static constexpr std::size_t kPoolSize = 192ull * 1024 * 1024;
+
+              static std::size_t round_up(std::size_t n)
+              {
+                  const std::size_t page = static_cast<std::size_t>(getpagesize());
+                  return (n + page - 1) & ~(page - 1);
+              }
+
+              Pool() = default;
+
+              // This header is compiled into several libraries (dynarmic, Cytrus...). The linker normally
+              // merges their copies of Pool::instance(), but if it ever kept more than one, a second pool
+              // would send its brk after the debugger has already detached and kill the app. So publish
+              // the pool in the environment and let every copy find it there.
+              // Intentionally leaked: CodeBlocks may be destroyed during static destruction.
+              static Pool* acquire()
+              {
+                  if (const char* existing = std::getenv("OAKNUT_TXM_POOL")) {
+                      if (Pool* pool = reinterpret_cast<Pool*>(std::strtoull(existing, nullptr, 16)))
+                          return pool;
+                  }
+                  Pool* pool = new Pool();
+                  char text[32];
+                  std::snprintf(text, sizeof(text), "%llx", static_cast<unsigned long long>(reinterpret_cast<std::uintptr_t>(pool)));
+                  setenv("OAKNUT_TXM_POOL", text, 1);
+                  return pool;
+              }
+
+              // Caller holds m_mutex.
+              bool ensure_locked()
+              {
+                  if (m_active)
+                      return true;
+                  if (m_gave_up)
+                      return false;
+
+                  if (!m_checked_hw) {
+                      m_checked_hw = true;
+                      m_has_txm = device_has_txm();
+                      std::fprintf(stderr, "[oaknut] TXM device: %s\n", m_has_txm ? "yes" : "no");
+                  }
+                  // Only TXM devices need the pool; everything else keeps the legacy path.
+                  if (!m_has_txm) {
+                      m_gave_up = true;
+                      return false;
+                  }
+                  // Nothing can make the pool executable until the JIT enabler has attached. Don't
+                  // give up: the enabler may attach after launch, so check again on the next request.
+                  if (!process_is_debugged())
+                      return false;
+
+                  if (!init_locked())
+                      m_gave_up = true;
+                  return m_active;
+              }
+
+              bool init_locked()
+              {
+                  const std::size_t size = kPoolSize;
+                  void* rx = mmap(nullptr, size, PROT_READ | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
+                  if (rx == MAP_FAILED) {
+                      std::fprintf(stderr, "[oaknut] TXM: RX mmap failed\n");
+                      return false;
+                  }
+                  if (reinterpret_cast<std::uintptr_t>(rx) + size > (1ull << 36))
+                      std::fprintf(stderr, "[oaknut] TXM: RX pool %p is above 2^36, the enabler may not prepare it\n", rx);
+
+                  // universal.js: x16 = 1 -> prepare JIT region at x0 (address) of x1 (length)
+                  __asm__ volatile(
+                      "mov x0, %0\n"
+                      "mov x1, %1\n"
+                      "mov x16, #1\n"
+                      "brk #0xf00d"
+                      :
+                      : "r"(rx), "r"(size)
+                      : "x0", "x1", "x16", "memory");
+
+                  vm_address_t rw = 0;
+                  vm_prot_t cur_prot = 0, max_prot = 0;
+                  const kern_return_t kr = vm_remap(mach_task_self(), &rw, size, 0, VM_FLAGS_ANYWHERE,
+                                                    mach_task_self(), reinterpret_cast<vm_address_t>(rx), 0 /* copy = FALSE */,
+                                                    &cur_prot, &max_prot, VM_INHERIT_DEFAULT);
+                  if (kr != KERN_SUCCESS) {
+                      std::fprintf(stderr, "[oaknut] TXM: vm_remap failed (0x%x)\n", kr);
+                      munmap(rx, size);
+                      return false;
+                  }
+                  if (mprotect(reinterpret_cast<void*>(rw), size, PROT_READ | PROT_WRITE) != 0) {
+                      std::fprintf(stderr, "[oaknut] TXM: mprotect(RW alias) failed\n");
+                      munmap(rx, size);
+                      munmap(reinterpret_cast<void*>(rw), size);
+                      return false;
+                  }
+
+                  m_rx = static_cast<std::uint8_t*>(rx);
+                  m_rw = reinterpret_cast<std::uint8_t*>(rw);
+                  m_size = size;
+                  m_free.emplace(0, size);
+                  m_active = true;
+                  std::fprintf(stderr, "[oaknut] TXM JIT pool ready: RX %p, RW %p, %zu MiB\n",
+                               static_cast<void*>(m_rx), static_cast<void*>(m_rw), size >> 20);
+
+                  // universal.js: x16 = 0 -> the region is prepared, detach the debugger
+                  __asm__ volatile(
+                      "mov x16, #0\n"
+                      "brk #0xf00d"
+                      :
+                      :
+                      : "x16", "memory");
+                  return true;
+              }
+
+              std::mutex m_mutex;
+              std::map<std::size_t, std::size_t> m_free;  // offset -> length
+              std::uint8_t* m_rx = nullptr;
+              std::uint8_t* m_rw = nullptr;
+              std::size_t m_size = 0;
+              bool m_active = false;
+              bool m_gave_up = false;
+              bool m_checked_hw = false;
+              bool m_has_txm = false;
+          };
+
+          }  // namespace txm_detail
+          #endif
+
+          class CodeBlock {
+          public:
+              explicit CodeBlock(std::size_t size)
+                  : m_size(size)
+              {
+          #if defined(OAKNUT_TXM_JIT)
+                  if (txm_detail::Pool::instance().allocate(size, m_memory, m_wmemory)) {
+                      m_txm = true;
+                      return;
+                  }
+          #endif
+
+          #if defined(_WIN32)
+                  m_memory = (std::uint32_t*)VirtualAlloc(nullptr, size, MEM_COMMIT, PAGE_EXECUTE_READWRITE);
+          #elif defined(__APPLE__)
+          #    if TARGET_OS_IPHONE
+                  m_memory = (std::uint32_t*)mmap(nullptr, size, PROT_READ | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
+          #    else
+                  m_memory = (std::uint32_t*)mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE | MAP_JIT, -1, 0);
+          #    endif
+          #elif defined(__NetBSD__)
+                  m_memory = (std::uint32_t*)mmap(nullptr, size, PROT_MPROTECT(PROT_READ | PROT_WRITE | PROT_EXEC), MAP_ANON | MAP_PRIVATE, -1, 0);
+          #elif defined(__OpenBSD__)
+                  m_memory = (std::uint32_t*)mmap(nullptr, size, PROT_READ | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
+          #else
+                  m_memory = (std::uint32_t*)mmap(nullptr, size, PROT_READ | PROT_WRITE | PROT_EXEC, MAP_ANON | MAP_PRIVATE, -1, 0);
+          #endif
+
+                  if (m_memory == nullptr)
+                      throw std::bad_alloc{};
+                  m_wmemory = m_memory;
+              }
+
+              ~CodeBlock()
+              {
+                  if (m_memory == nullptr)
+                      return;
+
+          #if defined(OAKNUT_TXM_JIT)
+                  if (m_txm) {
+                      txm_detail::Pool::instance().release(m_memory, m_size);
+                      return;
+                  }
+          #endif
+
+          #if defined(_WIN32)
+                  VirtualFree((void*)m_memory, 0, MEM_RELEASE);
+          #else
+                  munmap(m_memory, m_size);
+          #endif
+              }
+
+              CodeBlock(const CodeBlock&) = delete;
+              CodeBlock& operator=(const CodeBlock&) = delete;
+              CodeBlock(CodeBlock&&) = delete;
+              CodeBlock& operator=(CodeBlock&&) = delete;
+
+              /// True when code lives in the TXM dual-mapped pool (written via wptr(), run via ptr()).
+              /// Calling this may initialise the pool (and talk to the JIT enabler) the first time.
+              static bool txm_pool_active()
+              {
+          #if defined(OAKNUT_TXM_JIT)
+                  return txm_detail::Pool::instance().active();
+          #else
+                  return false;
+          #endif
+              }
+
+              /// Executable address of the block. Use this for branch targets, function pointers, etc.
+              std::uint32_t* ptr() const
+              {
+                  return m_memory;
+              }
+
+              /// Writable address of the same memory. Identical to ptr() unless txm_pool_active().
+              std::uint32_t* wptr() const
+              {
+                  return m_wmemory;
+              }
+
+              void protect()
+              {
+                  if (m_txm)
+                      return;
+          #if defined(__APPLE__) && !TARGET_OS_IPHONE
+                  pthread_jit_write_protect_np(1);
+          #elif defined(__APPLE__) || defined(__NetBSD__) || defined(__OpenBSD__)
+                  mprotect(m_memory, m_size, PROT_READ | PROT_EXEC);
+          #endif
+              }
+
+              void unprotect()
+              {
+                  if (m_txm)
+                      return;
+          #if defined(__APPLE__) && !TARGET_OS_IPHONE
+                  pthread_jit_write_protect_np(0);
+          #elif defined(__APPLE__) || defined(__NetBSD__) || defined(__OpenBSD__)
+                  mprotect(m_memory, m_size, PROT_READ | PROT_WRITE);
+          #endif
+              }
+
+              /// Invalidate should be used with executable memory pointers.
+              void invalidate(std::uint32_t* mem, std::size_t size)
+              {
+          #if defined(__APPLE__)
+                  sys_icache_invalidate(mem, size);
+          #elif defined(_WIN32)
+                  FlushInstructionCache(GetCurrentProcess(), mem, size);
+          #else
+                  static std::size_t icache_line_size = 0x10000, dcache_line_size = 0x10000;
+
+                  std::uint64_t ctr;
+                  __asm__ volatile("mrs %0, ctr_el0"
+                                   : "=r"(ctr));
+
+                  const std::size_t isize = icache_line_size = std::min<std::size_t>(icache_line_size, 4 << ((ctr >> 0) & 0xf));
+                  const std::size_t dsize = dcache_line_size = std::min<std::size_t>(dcache_line_size, 4 << ((ctr >> 16) & 0xf));
+
+                  const std::uintptr_t end = (std::uintptr_t)mem + size;
+
+                  for (std::uintptr_t addr = ((std::uintptr_t)mem) & ~(dsize - 1); addr < end; addr += dsize) {
+                      __asm__ volatile("dc cvau, %0"
+                                       :
+                                       : "r"(addr)
+                                       : "memory");
+                  }
+                  __asm__ volatile("dsb ish\n"
+                                   :
+                                   :
+                                   : "memory");
+
+                  for (std::uintptr_t addr = ((std::uintptr_t)mem) & ~(isize - 1); addr < end; addr += isize) {
+                      __asm__ volatile("ic ivau, %0"
+                                       :
+                                       : "r"(addr)
+                                       : "memory");
+                  }
+                  __asm__ volatile("dsb ish\nisb\n"
+                                   :
+                                   :
+                                   : "memory");
+          #endif
+              }
+
+              void invalidate_all()
+              {
+                  invalidate(m_memory, m_size);
+              }
+
+          protected:
+              std::uint32_t* m_memory = nullptr;
+              std::uint32_t* m_wmemory = nullptr;
+              std::size_t m_size = 0;
+              bool m_txm = false;
+          };
+
+          }  // namespace oaknut
+          OAKNUT_TXM_EOF
+          wc -l "$RUNNER_TEMP/txm/code_block.hpp"
+
+      - name: "TXM JIT: patch Cytrus (shader JIT + CPU JIT cache size)"
+        if: ${{ github.event.inputs.txm_jit != 'false' }}
+        run: |
+          python3 - <<'PY'
+          import sys
+
+          def patch(path, old, new):
+              s = open(path).read()
+              if new in s:
+                  print(f"already patched: {path}")
+                  return
+              if s.count(old) != 1:
+                  sys.exit(f"::error::Cannot apply TXM patch to {path}: expected text not found exactly once "
+                           f"(the Cytrus core probably changed; send me this log)")
+              open(path, "w").write(s.replace(old, new))
+              print(f"patched {path}")
+
+          # Shader JIT: write the compiled shader through the writable view of the code block.
+          patch("Cytrus/System/video_core/shader/shader_jit_a64_compiler.cpp",
+          """    // Copy to executable memory
+              std::memcpy(code_mem->ptr(), code_vec.data(), code_vec.size() * sizeof(u32));
+          """,
+          """    // Copy to executable memory (write through the writable view; on TXM devices this is a
+              // separate mapping from the executable one)
+              std::memcpy(code_mem->wptr(), code_vec.data(), code_vec.size() * sizeof(u32));
+          """)
+
+          # CPU JIT: include the CodeBlock header and keep each dynarmic cache small under TXM,
+          # because all JIT memory comes from one shared pool there.
+          path = "Cytrus/System/core/arm/dynarmic/arm_dynarmic.cpp"
+          patch(path,
+          """#include <dynarmic/interface/optimization_flags.h>
+          """,
+          """#include <dynarmic/interface/optimization_flags.h>
+          #include <oaknut/code_block.hpp>
+          """)
+          patch(path,
+          """    config.global_monitor = &exclusive_monitor.monitor;
+
+              return std::make_unique<Dynarmic::A32::Jit>(config);""",
+          """    config.global_monitor = &exclusive_monitor.monitor;
+
+              // TXM devices hand out JIT memory from one shared pool, so keep each cache small
+              // (the cache is flushed and refilled when it runs out).
+              if (oaknut::CodeBlock::txm_pool_active()) {
+                  config.code_cache_size = 32 * 1024 * 1024;
+              }
+
+              return std::make_unique<Dynarmic::A32::Jit>(config);""")
+          PY
+
       - name: Select Xcode 27
         run: |
           XCODE=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)
@@ -153,6 +681,154 @@ jobs:
           echo "Resolved package revisions:"
           cat Folium.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved \
             | grep -E '"location"|"revision"' || true
+
+      - name: "TXM JIT: install patched oaknut into SharedDependencies"
+        if: ${{ github.event.inputs.txm_jit != 'false' }}
+        run: |
+          DEST=build/SourcePackages/checkouts/SharedDependencies/Sources/oaknut/include/oaknut/code_block.hpp
+          test -f "$DEST" || { echo "::error::$DEST not found (SharedDependencies layout changed?)"; exit 1; }
+          cp "$RUNNER_TEMP/txm/code_block.hpp" "$DEST"
+          grep -q OAKNUT_TXM_JIT "$DEST" && echo "Installed TXM-aware oaknut CodeBlock into SharedDependencies"
+
+      # The prebuilt dynarmic (CPU JIT) inside SharedDependencies has the old CodeBlock baked
+      # in, so rebuild it from the same source revision with the patched CodeBlock and swap it in.
+      - name: "TXM JIT: restore cached dynarmic build"
+        id: dyncache
+        if: ${{ github.event.inputs.txm_jit != 'false' }}
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/dynarmic-out
+          key: dynarmic-txm-${{ hashFiles('.github/workflows/*.yml') }}
+
+      - name: "TXM JIT: build patched dynarmic"
+        if: ${{ github.event.inputs.txm_jit != 'false' && steps.dyncache.outputs.cache-hit != 'true' }}
+        run: |
+          set -euo pipefail
+
+          # Same source revision as the prebuilt lib_dynarmic in SharedDependencies (the headers
+          # shipped in that xcframework are byte-identical to this commit's src/dynarmic/interface).
+          DYN_REF=ee9376318949008256a6f4c77527254885d9d4ad
+          W="$RUNNER_TEMP/dynarmic"
+          OUT="$RUNNER_TEMP/dynarmic-out"
+          rm -rf "$W" "$OUT"; mkdir -p "$OUT"
+
+          git clone -q https://github.com/jarrodnorwell/dynarmic "$W"
+          git -C "$W" checkout -q "$DYN_REF"
+          git -C "$W" submodule update --init --depth 1   # fmt, mcl, robin-map
+
+          # 1) TXM-aware oaknut CodeBlock (dynarmic bundles its own copy of oaknut)
+          cp "$RUNNER_TEMP/txm/code_block.hpp" "$W/externals/oaknut/include/oaknut/code_block.hpp"
+
+          # 2) Write code through CodeBlock::wptr() and run it from ptr()
+          python3 - "$W" <<'PY'
+          import sys
+          W = sys.argv[1]
+
+          def patch(rel, edits):
+              p = f"{W}/{rel}"
+              s = open(p).read()
+              for old, new, count in edits:
+                  if s.count(old) != count:
+                      sys.exit(f"::error::dynarmic patch failed in {rel}: {old!r} found {s.count(old)}x, expected {count}x")
+                  s = s.replace(old, new)
+              open(p, "w").write(s)
+              print("patched", rel)
+
+          patch("src/dynarmic/backend/arm64/address_space.cpp", [
+              (", code(mem.ptr(), mem.ptr())", ", code(mem.wptr(), mem.ptr())", 1),
+              ("CodeGenerator c{mem.ptr(), mem.ptr()};", "CodeGenerator c{mem.wptr(), mem.ptr()};", 2),
+          ])
+
+          # The spin-lock helper used to allocate its code block at program start, before a JIT
+          # enabler can attach. Allocate it on first use instead.
+          spin = "src/dynarmic/common/spin_lock_arm64.cpp"
+          patch(spin, [
+              ("SpinLockImpl impl;\n",
+               "// Created lazily (not at program start) so its code block is allocated after a JIT enabler\n"
+               "// has had a chance to attach; see oaknut's TXM JIT pool.\n"
+               "SpinLockImpl* impl = nullptr;\n", 1),
+              (", code{mem.ptr(), mem.ptr()} {}", ", code{mem.wptr(), mem.ptr()} {}", 1),
+              ("}  // namespace\n\nvoid SpinLock::Lock()",
+               "void InitializeImpl() {\n    impl = new SpinLockImpl();\n    impl->Initialize();\n}\n\n}  // namespace\n\nvoid SpinLock::Lock()", 1),
+              ("    std::call_once(flag, &SpinLockImpl::Initialize, impl);\n    impl.lock(&storage);",
+               "    std::call_once(flag, &InitializeImpl);\n    impl->lock(&storage);", 1),
+              ("    std::call_once(flag, &SpinLockImpl::Initialize, impl);\n    impl.unlock(&storage);",
+               "    std::call_once(flag, &InitializeImpl);\n    impl->unlock(&storage);", 1),
+          ])
+
+          # On iOS, always use the generic exception handler (what the original library used);
+          # don't go looking for the macOS-only Mach exception definitions.
+          patch("src/dynarmic/CMakeLists.txt", [
+              ('    find_path(MACH_EXC_DEFS_DIR "mach/mach_exc.defs")', '    set(MACH_EXC_DEFS_DIR "")', 1),
+          ])
+          PY
+
+          # 3) dynarmic wants Boost headers; reuse the ones bundled in SharedDependencies.
+          BOOST_INC="$PWD/build/SourcePackages/checkouts/SharedDependencies/Sources/boost/include"
+          test -f "$BOOST_INC/boost/variant.hpp"
+          BCFG="$RUNNER_TEMP/boostcfg"; mkdir -p "$BCFG"
+          cat > "$BCFG/BoostConfig.cmake" <<CMAKE
+          set(Boost_FOUND TRUE)
+          set(Boost_INCLUDE_DIRS "$BOOST_INC")
+          if(NOT TARGET Boost::boost)
+            add_library(Boost::boost INTERFACE IMPORTED)
+            set_target_properties(Boost::boost PROPERTIES INTERFACE_INCLUDE_DIRECTORIES "$BOOST_INC")
+          endif()
+          CMAKE
+          cat > "$BCFG/BoostConfigVersion.cmake" <<'CMAKE'
+          set(PACKAGE_VERSION 1.92.0)
+          set(PACKAGE_VERSION_COMPATIBLE TRUE)
+          set(PACKAGE_VERSION_EXACT FALSE)
+          CMAKE
+
+          # 4) Configure + build for iOS arm64
+          cmake --version | head -1
+          cmake -S "$W" -B "$W/build" -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_SYSTEM_NAME=iOS \
+            -DCMAKE_OSX_SYSROOT=iphoneos \
+            -DCMAKE_OSX_ARCHITECTURES=arm64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
+            -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
+            -DBUILD_SHARED_LIBS=OFF \
+            -DCMAKE_POLICY_DEFAULT_CMP0167=NEW \
+            -DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
+            -DBoost_DIR="$BCFG" \
+            -DDYNARMIC_TESTS=OFF \
+            -DDYNARMIC_USE_BUNDLED_EXTERNALS=ON \
+            -DDYNARMIC_WARNINGS_AS_ERRORS=OFF \
+            -DDYNARMIC_USE_PRECOMPILED_HEADERS=OFF
+          cmake --build "$W/build" --target dynarmic -j "$(sysctl -n hw.ncpu)"
+
+          LIB=$(find "$W/build" -name libdynarmic.a | head -1)
+          test -f "$LIB" || { echo "::error::libdynarmic.a was not produced"; find "$W/build" -name '*.a'; exit 1; }
+          cp "$LIB" "$OUT/libdynarmic.a"
+          lipo -info "$OUT/libdynarmic.a"
+          ls -l "$OUT/libdynarmic.a"
+          echo "objects in new library: $(ar t "$OUT/libdynarmic.a" | grep -c '\.o$')"
+
+      - name: "TXM JIT: swap patched dynarmic into SharedDependencies"
+        if: ${{ github.event.inputs.txm_jit != 'false' }}
+        run: |
+          set -euo pipefail
+          NEW="$RUNNER_TEMP/dynarmic-out/libdynarmic.a"
+          test -f "$NEW" || { echo "::error::patched libdynarmic.a is missing"; exit 1; }
+
+          # The prebuilt lib_dynarmic.xcframework SwiftPM downloaded for SharedDependencies
+          FOUND=$(find build/SourcePackages -name libdynarmic.a ! -path '*simulator*' || true)
+          if [ -z "$FOUND" ]; then
+            echo "::error::Could not find the downloaded libdynarmic.a. Binary artifacts present:"
+            find build/SourcePackages -iname '*.xcframework' -maxdepth 6 || true
+            exit 1
+          fi
+
+          for f in $FOUND; do
+            echo "Replacing $f"
+            lipo -info "$f" || true
+            cp "$NEW" "$f"
+            # prove the TXM-aware code is in there
+            strings -a "$f" | grep -q OAKNUT_TXM_POOL && echo "  -> contains TXM pool code"
+          done
 
       # magic_enum's header has lived at both include/magic_enum.hpp and
       # include/magic_enum/magic_enum.hpp; the cores use both spellings.
