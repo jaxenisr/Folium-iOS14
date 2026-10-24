@@ -1,0 +1,151 @@
+name: Build Folium (iOS)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      bundle_id:
+        description: "Bundle ID override (leave blank to keep com.antique.Folium-iOS)"
+        required: false
+        default: ""
+      update_cores:
+        description: "Pull the latest commit of every core submodule (Cytrus, Grape, etc.) instead of the pinned ones"
+        type: boolean
+        default: false
+      make_release:
+        description: "Publish the IPA as a GitHub release"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PROJECT: Folium.xcodeproj
+  SCHEME: Folium
+  CONFIGURATION: Release
+
+jobs:
+  build:
+    name: Build unsigned IPA
+    # The project is saved in Xcode 27 format (objectVersion 110), so it needs
+    # GitHub's Xcode 27 image (macOS 27, Apple Silicon).
+    runs-on: xcode-27
+    timeout-minutes: 120
+
+    steps:
+      - name: Checkout (with all core submodules)
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+          fetch-depth: 1
+
+      - name: Update cores to latest (optional)
+        if: ${{ github.event.inputs.update_cores == 'true' }}
+        run: |
+          git submodule update --init --remote --recursive --depth 1
+          git submodule status
+
+      - name: Check that the cores were checked out
+        run: |
+          missing=0
+          for d in Cherry Cytrus Durian Grape Kiwi Lychee Mandarine Mango Plum Tomato; do
+            if [ -z "$(ls -A "$d" 2>/dev/null)" ]; then
+              echo "::error::Submodule '$d' is empty"; missing=1
+            fi
+          done
+          exit $missing
+
+      - name: Select Xcode 27
+        run: |
+          XCODE=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)
+          [ -z "$XCODE" ] && XCODE=$(ls -d /Applications/Xcode_27*.app | sort -V | tail -1)
+          echo "Using $XCODE"
+          sudo xcode-select -s "$XCODE/Contents/Developer"
+          xcodebuild -version
+          xcodebuild -showsdks | grep -i iphoneos
+
+      - name: Cache Swift packages
+        uses: actions/cache@v4
+        with:
+          path: build/SourcePackages
+          key: spm-${{ runner.os }}-${{ hashFiles('Folium.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: spm-${{ runner.os }}-
+
+      - name: Resolve Swift packages
+        run: |
+          xcodebuild -resolvePackageDependencies \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -clonedSourcePackagesDirPath build/SourcePackages \
+            -skipPackagePluginValidation -skipMacroValidation
+
+      - name: Build archive (unsigned)
+        run: |
+          EXTRA=()
+          if [ -n "${{ github.event.inputs.bundle_id }}" ]; then
+            EXTRA+=("PRODUCT_BUNDLE_IDENTIFIER=${{ github.event.inputs.bundle_id }}")
+          fi
+
+          command -v xcbeautify >/dev/null || brew install xcbeautify
+
+          set -o pipefail
+          xcodebuild archive \
+            -project "$PROJECT" \
+            -scheme "$SCHEME" \
+            -configuration "$CONFIGURATION" \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/Folium.xcarchive \
+            -clonedSourcePackagesDirPath build/SourcePackages \
+            -skipPackagePluginValidation -skipMacroValidation \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM="" \
+            "${EXTRA[@]}" \
+            | tee build/xcodebuild.log | xcbeautify --renderer github-actions || {
+              echo "::group::Last 200 lines of raw log"; tail -200 build/xcodebuild.log; echo "::endgroup::"; exit 1; }
+
+      - name: Package IPA
+        run: |
+          APP=$(find build/Folium.xcarchive/Products/Applications -maxdepth 1 -name '*.app' | head -1)
+          [ -d "$APP" ] || { echo "::error::No .app found in archive"; exit 1; }
+          rm -rf Payload && mkdir Payload
+          cp -R "$APP" Payload/
+          # Strip any leftover signatures so sideloaders / LiveContainer re-sign cleanly
+          find Payload -name '_CodeSignature' -type d -prune -exec rm -rf {} +
+          SHORT_SHA=$(git rev-parse --short HEAD)
+          IPA="Folium-${SHORT_SHA}.ipa"
+          zip -qry "$IPA" Payload
+          echo "IPA=$IPA" >> "$GITHUB_ENV"
+          echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
+          ls -lh "$IPA"
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: Folium-${{ env.SHORT_SHA }}
+          path: ${{ env.IPA }}
+          if-no-files-found: error
+
+      - name: Upload build log on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: xcodebuild-log
+          path: build/xcodebuild.log
+
+      - name: Publish release (optional)
+        if: ${{ github.event.inputs.make_release == 'true' }}
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Folium build ${{ github.run_number }} (${{ env.SHORT_SHA }})
+          files: ${{ env.IPA }}
+          prerelease: true
