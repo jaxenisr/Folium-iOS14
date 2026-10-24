@@ -61,6 +61,37 @@ jobs:
           git clone --depth 1 https://github.com/jarrodnorwell/AntiqueKit "$GITHUB_WORKSPACE/../AntiqueKit"
           ls "$GITHUB_WORKSPACE/../AntiqueKit"
 
+      # Cytrus (3DS core) looks for Vulkan, glslang and VMA headers in the
+      # LunarG Vulkan SDK install on the developer's Mac:
+      #   $(HOME)/VulkanSDK/1.4.363.0/macOS/include{,/glslang,/vma}
+      # Recreate that layout from the matching upstream SDK tags (headers only;
+      # the libraries themselves come from SharedDependencies / MoltenVK).
+      - name: Install Vulkan SDK headers (1.4.363.0 layout)
+        env:
+          VK_SDK_TAG: vulkan-sdk-1.4.363.0
+          VMA_TAG: v3.3.0
+        run: |
+          INC="$HOME/VulkanSDK/1.4.363.0/macOS/include"
+          TMP="$RUNNER_TEMP/vksrc"
+          mkdir -p "$INC/glslang/SPIRV" "$INC/vma" "$TMP"
+
+          git clone -q --depth 1 -b "$VK_SDK_TAG" https://github.com/KhronosGroup/Vulkan-Headers "$TMP/Vulkan-Headers"
+          git clone -q --depth 1 -b "$VK_SDK_TAG" https://github.com/KhronosGroup/glslang "$TMP/glslang"
+          git clone -q --depth 1 -b "$VMA_TAG" https://github.com/GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator "$TMP/VMA"
+
+          # vulkan/, vk_video/
+          cp -R "$TMP/Vulkan-Headers/include/." "$INC/"
+          # glslang/{Public,Include,MachineIndependent,...} and glslang/SPIRV (headers only)
+          (cd "$TMP/glslang/glslang" && find . -name '*.h' | tar -cf - -T -) | (cd "$INC/glslang" && tar -xf -)
+          (cd "$TMP/glslang/SPIRV"   && find . -name '*.h' | tar -cf - -T -) | (cd "$INC/glslang/SPIRV" && tar -xf -)
+          # vma/vk_mem_alloc.h
+          cp "$TMP/VMA/include/vk_mem_alloc.h" "$INC/vma/"
+
+          ls "$INC" "$INC/glslang"
+          test -f "$INC/vulkan/vulkan.hpp"
+          test -f "$INC/glslang/Public/ShaderLang.h"
+          test -f "$INC/vma/vk_mem_alloc.h"
+
       - name: Update cores to latest (optional)
         if: ${{ github.event.inputs.update_cores == 'true' }}
         run: |
