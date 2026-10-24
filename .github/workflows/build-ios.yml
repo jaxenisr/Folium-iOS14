@@ -687,6 +687,9 @@ jobs:
         run: |
           DEST=build/SourcePackages/checkouts/SharedDependencies/Sources/oaknut/include/oaknut/code_block.hpp
           test -f "$DEST" || { echo "::error::$DEST not found (SharedDependencies layout changed?)"; exit 1; }
+          # SwiftPM checks packages out read-only
+          chmod -R u+w "$(dirname "$DEST")"
+          rm -f "$DEST"
           cp "$RUNNER_TEMP/txm/code_block.hpp" "$DEST"
           grep -q OAKNUT_TXM_JIT "$DEST" && echo "Installed TXM-aware oaknut CodeBlock into SharedDependencies"
 
@@ -825,6 +828,8 @@ jobs:
           for f in $FOUND; do
             echo "Replacing $f"
             lipo -info "$f" || true
+            chmod -R u+w "$(dirname "$f")" 2>/dev/null || true
+            rm -f "$f"
             cp "$NEW" "$f"
             # prove the TXM-aware code is in there
             strings -a "$f" | grep -q OAKNUT_TXM_POOL && echo "  -> contains TXM pool code"
