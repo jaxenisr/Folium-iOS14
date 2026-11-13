@@ -98,52 +98,54 @@ class SettingsController : UICollectionViewController {
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "ellipsis"), menu: UIMenu(children: [
             UIMenu(options: .displayInline, children: [
-                UIAction(title: "Application", image: UIImage(systemName: "app.grid")) { action in
+                UIAction.compat(title: "Application", image: UIImage(systemName: "app.grid")) { action in
                     self.selectedSnapshot = .application
                 }
             ]),
             UIMenu(title: "Bandai", image: UIImage(systemName: "cpu"), children: [
-                UIAction(title: "WonderSwan", subtitle: "+ WonderSwan Color") { action in
+                UIAction.compat(title: "WonderSwan", subtitle: "+ WonderSwan Color") { action in
                     self.selectedSnapshot = .durian
                 }
             ]),
             UIMenu(title: "Coleco", image: UIImage(systemName: "cpu"), children: [
-                UIAction(title: "ColecoVision", attributes: .disabled) { action in
+                UIAction.compat(title: "ColecoVision", attributes: .disabled) { action in
                     self.selectedSnapshot = .cherry
                 }
             ]),
             UIMenu(title: "Nintendo", image: UIImage(systemName: "cpu"), children: [
-                UIAction(title: "3DS", subtitle: "+ New 3DS") { action in
+                UIAction.compat(title: "3DS", subtitle: "+ New 3DS") { action in
                     self.selectedSnapshot = .cytrus
                 },
-                UIAction(title: "DS", subtitle: "+ DSi") { action in
+                UIAction.compat(title: "DS", subtitle: "+ DSi") { action in
                     self.selectedSnapshot = .grape
                 },
-                UIAction(title: "Game Boy", subtitle: "+ Game Boy Color") { action in
+                UIAction.compat(title: "Game Boy", subtitle: "+ Game Boy Color") { action in
                     self.selectedSnapshot = .kiwi
                 },
-                UIAction(title: "Game Boy Advance") { action in
+                UIAction.compat(title: "Game Boy Advance") { action in
                     self.selectedSnapshot = .tomato
                 },
-                UIAction(title: "Nintendo Entertainment System", attributes: .disabled) { action in
+                UIAction.compat(title: "Nintendo Entertainment System", attributes: .disabled) { action in
                     self.selectedSnapshot = .mango
                 },
-                UIAction(title: "Super Nintendo Entertainment System", attributes: .disabled) { action in
+                UIAction.compat(title: "Super Nintendo Entertainment System", attributes: .disabled) { action in
                     self.selectedSnapshot = .lychee
                 }
             ]),
             UIMenu(title: "SEGA", image: UIImage(systemName: "cpu"), children: [
-                UIAction(title: "Genesis", subtitle: "+ Mega Drive", attributes: .disabled) { action in
+                UIAction.compat(title: "Genesis", subtitle: "+ Mega Drive", attributes: .disabled) { action in
                     self.selectedSnapshot = .plum
                 }
             ]),
             UIMenu(title: "Sony", image: UIImage(systemName: "cpu"), children: [
-                UIAction(title: "PlayStation 1", attributes: .disabled) { action in
+                UIAction.compat(title: "PlayStation 1", attributes: .disabled) { action in
                     self.selectedSnapshot = .mandarine
                 }
             ])
         ]))
-        navigationItem.style = .browser
+        if #available(iOS 16.0, *) {
+            navigationItem.style = .browser
+        }
         view.backgroundColor = .systemBackground
         
         if #available(iOS 26.0, *) {

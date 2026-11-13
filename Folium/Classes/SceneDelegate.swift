@@ -45,21 +45,23 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     private let tomatoSystem = TomatoSystem()
 
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
-        Task.detached(priority: .background) {
-            for await result in Transaction.updates {
-                guard case .verified(let transaction) = result else {
-                    continue
+        if #available(iOS 15.0, *) {
+            Task.detached(priority: .background) {
+                for await result in Transaction.updates {
+                    guard case .verified(let transaction) = result else {
+                        continue
+                    }
+                    
+                    var inDate: Bool = false
+                    if let expirationDate = transaction.expirationDate {
+                        inDate = expirationDate > Date()
+                    }
+                    
+                    UserDefaults.standard.set(transaction.revocationDate.isNil && inDate, forKey: "extraFeaturesPurchased")
+                    NotificationCenter.default.post(name: NSNotification.Name("extraFeaturesStatusDidChange"), object: true)
+                    
+                    await transaction.finish()
                 }
-                
-                var inDate: Bool = false
-                if let expirationDate = transaction.expirationDate {
-                    inDate = expirationDate > Date()
-                }
-                
-                UserDefaults.standard.set(transaction.revocationDate.isNil && inDate, forKey: "extraFeaturesPurchased")
-                NotificationCenter.default.post(name: NSNotification.Name("extraFeaturesStatusDidChange"), object: true)
-                
-                await transaction.finish()
             }
         }
         
@@ -267,8 +269,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         for (system, defaultValues) in systemsWithDefaultValues {
             for (key, value) in defaultValues {
-                if userDefaults.value(forKey: "\(system.string.localizedLowercase).\(key)") == nil {
-                    userDefaults.set(value, forKey: "\(system.string.localizedLowercase).\(key)")
+                if userDefaults.value(forKey: "\(system.string.lowercased).\(key)") == nil {
+                    userDefaults.set(value, forKey: "\(system.string.lowercased).\(key)")
                 }
             }
         }

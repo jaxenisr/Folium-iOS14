@@ -176,14 +176,14 @@ actor DirectoryManager {
         ]
         
         for system in await SystemNames.array {
-            let systemDirectoryURL = documentDirectoryURL.appending(component: await system.string)
+            let systemDirectoryURL = documentDirectoryURL.appendingPathComponent(await system.string)
             
             try createDirectoryIfNeeded(from: systemDirectoryURL)
             try fixSubfolders(for: systemDirectoryURL)
             
             if let subfoldersForSystem = subfoldersForSystems[system] {
                 try loop(subfolders: subfoldersForSystem, for: systemDirectoryURL) { subfolderName in
-                    try createDirectoryIfNeeded(from: systemDirectoryURL.appending(component: subfolderName))
+                    try createDirectoryIfNeeded(from: systemDirectoryURL.appendingPathComponent(subfolderName))
                 }
             }
         }
@@ -204,10 +204,10 @@ actor DirectoryManager {
         ]
         
         for (key, value) in replacementSubfolderNames {
-            let oldDirectoryURL = systemDirectoryURL.appending(component: key)
+            let oldDirectoryURL = systemDirectoryURL.appendingPathComponent(key)
             
             if fileManager.fileExists(atPath: oldDirectoryURL.path) {
-                try fileManager.moveItem(at: oldDirectoryURL, to: systemDirectoryURL.appending(component: value))
+                try fileManager.moveItem(at: oldDirectoryURL, to: systemDirectoryURL.appendingPathComponent(value))
             }
         }
     }
@@ -216,7 +216,7 @@ actor DirectoryManager {
         for subfolderName in subfolders.keys {
             if let subfiles = subfolders[subfolderName] {
                 for subfile in subfiles.values where subfile.priority == .required {
-                    if !fileManager.fileExists(atPath: systemDirectoryURL.appending(component: subfile.path).appending(component: subfile.fileName).path) {
+                    if !fileManager.fileExists(atPath: systemDirectoryURL.appendingPathComponent(subfile.path).appendingPathComponent(subfile.fileName).path) {
                         unavailableSystemFiles.append(subfile)
                     }
                 }

@@ -101,9 +101,9 @@ class GameCell : UICollectionViewCell {
         imageView.bottom.constraint(equalTo: visualEffectView.contentView.salg.bottom, constant: -4.0).isActive = true
         imageView.right.constraint(equalTo: visualEffectView.contentView.salg.right, constant: -4.0).isActive = true
         
-        let configuration: UIButton.Configuration = .configuration(.medium, .capsule, UIImage(systemName: "ellipsis"), nil, .medium)
+        let configuration: FoliumButtonConfiguration = .configuration(.medium, .capsule, UIImage(systemName: "ellipsis"), nil, .medium)
         
-        button = UIButton(configuration: configuration)
+        button = UIButton(buttonConfiguration: configuration)
         guard let button: UIButton else {
             return
         }

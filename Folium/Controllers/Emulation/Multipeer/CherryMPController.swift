@@ -33,26 +33,26 @@ class CherryMPController : ControlsController {
         stackView.spacing = 20
         view.addSubview(stackView)
         
-        // var settingsConfiguration: UIButton.Configuration = UIButton.Configuration.glass()
+        // var settingsConfiguration: FoliumButtonConfiguration = FoliumButtonConfiguration.glass()
         // settingsConfiguration.buttonSize = .medium
         // settingsConfiguration.cornerStyle = .capsule
         // settingsConfiguration.image = UIImage(systemName: "ellipsis")?
         //     .applyingSymbolConfiguration(UIImage.SymbolConfiguration(scale: .medium))
         
-        let settingsConfiguration: UIButton.Configuration = .configuration(.medium, .capsule, UIImage(systemName: "ellipsis"), nil, .medium)
+        let settingsConfiguration: FoliumButtonConfiguration = .configuration(.medium, .capsule, UIImage(systemName: "ellipsis"), nil, .medium)
         settingsButton = .button(with: settingsConfiguration,
                                  actions: ({ _ in }, { _ in }), UIMenu(preferredElementSize: .medium, children: []))
         guard let settingsButton else {
             return
         }
         
-        // var selectConfiguration: UIButton.Configuration = UIButton.Configuration.glass()
+        // var selectConfiguration: FoliumButtonConfiguration = FoliumButtonConfiguration.glass()
         // selectConfiguration.buttonSize = .medium
         // selectConfiguration.cornerStyle = .capsule
         // selectConfiguration.image = UIImage(systemName: "minus")?
         //     .applyingSymbolConfiguration(UIImage.SymbolConfiguration(scale: .medium))
         
-        let selectConfiguration: UIButton.Configuration = .configuration(.medium, .capsule, UIImage(systemName: "minus"), nil, .medium)
+        let selectConfiguration: FoliumButtonConfiguration = .configuration(.medium, .capsule, UIImage(systemName: "minus"), nil, .medium)
         selectButton = .button(with: selectConfiguration, actions: ({ _ in
             // self.press(button: .select)
         }, { _ in
@@ -62,13 +62,13 @@ class CherryMPController : ControlsController {
             return
         }
         
-        // var startConfiguration: UIButton.Configuration = UIButton.Configuration.glass()
+        // var startConfiguration: FoliumButtonConfiguration = FoliumButtonConfiguration.glass()
         // startConfiguration.buttonSize = .medium
         // startConfiguration.cornerStyle = .capsule
         // startConfiguration.image = UIImage(systemName: "plus")?
         //     .applyingSymbolConfiguration(UIImage.SymbolConfiguration(scale: .medium))
         
-        let startConfiguration: UIButton.Configuration = .configuration(.medium, .capsule, UIImage(systemName: "plus"), nil, .medium)
+        let startConfiguration: FoliumButtonConfiguration = .configuration(.medium, .capsule, UIImage(systemName: "plus"), nil, .medium)
         startButton = .button(with: startConfiguration, actions: ({ _ in
             // self.press(button: .start)
         }, { _ in
@@ -79,7 +79,7 @@ class CherryMPController : ControlsController {
         }
         
         //----
-        let zeroConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "0.circle.fill"), nil, .medium)
+        let zeroConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "0.circle.fill"), nil, .medium)
         zeroButton = .button(with: zeroConfiguration, actions: ({ _ in
             self.press(button: .num0)
         }, { _ in
@@ -90,7 +90,7 @@ class CherryMPController : ControlsController {
         }
         view.addSubview(zeroButton)
         
-        let asterixConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "circle"), nil, .medium)
+        let asterixConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "circle"), nil, .medium)
         asterixButton = .button(with: asterixConfiguration, actions: ({ _ in
             self.press(button: .star)
         }, { _ in
@@ -101,7 +101,7 @@ class CherryMPController : ControlsController {
         }
         view.addSubview(asterixButton)
         
-        let hashtagConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "number"), nil, .medium)
+        let hashtagConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "number"), nil, .medium)
         hashtagButton = .button(with: hashtagConfiguration, actions: ({ _ in
             self.press(button: .pound)
         }, { _ in
@@ -113,7 +113,7 @@ class CherryMPController : ControlsController {
         view.addSubview(hashtagButton)
         
         //----
-        let eightConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "8.circle.fill"), nil, .medium)
+        let eightConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "8.circle.fill"), nil, .medium)
         eightButton = .button(with: eightConfiguration, actions: ({ _ in
             self.press(button: .num8)
         }, { _ in
@@ -124,7 +124,7 @@ class CherryMPController : ControlsController {
         }
         view.addSubview(eightButton)
         
-        let sevenConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "7.circle.fill"), nil, .medium)
+        let sevenConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "7.circle.fill"), nil, .medium)
         sevenButton = .button(with: sevenConfiguration, actions: ({ _ in
             self.press(button: .num7)
         }, { _ in
@@ -135,7 +135,7 @@ class CherryMPController : ControlsController {
         }
         view.addSubview(sevenButton)
         
-        let nineConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "9.circle.fill"), nil, .medium)
+        let nineConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "9.circle.fill"), nil, .medium)
         nineButton = .button(with: nineConfiguration, actions: ({ _ in
             self.press(button: .num9)
         }, { _ in
@@ -147,7 +147,7 @@ class CherryMPController : ControlsController {
         view.addSubview(nineButton)
         
         //----
-        let fiveConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "5.circle.fill"), nil, .medium)
+        let fiveConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "5.circle.fill"), nil, .medium)
         fiveButton = .button(with: fiveConfiguration, actions: ({ _ in
             self.press(button: .num5)
         }, { _ in
@@ -158,7 +158,7 @@ class CherryMPController : ControlsController {
         }
         view.addSubview(fiveButton)
         
-        let fourConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "4.circle.fill"), nil, .medium)
+        let fourConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "4.circle.fill"), nil, .medium)
         fourButton = .button(with: fourConfiguration, actions: ({ _ in
             self.press(button: .num4)
         }, { _ in
@@ -169,7 +169,7 @@ class CherryMPController : ControlsController {
         }
         view.addSubview(fourButton)
         
-        let sixConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "6.circle.fill"), nil, .medium)
+        let sixConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "6.circle.fill"), nil, .medium)
         sixButton = .button(with: sixConfiguration, actions: ({ _ in
             self.press(button: .num6)
         }, { _ in
@@ -181,7 +181,7 @@ class CherryMPController : ControlsController {
         view.addSubview(sixButton)
         
         //----
-        let twoConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "2.circle.fill"), nil, .medium)
+        let twoConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "2.circle.fill"), nil, .medium)
         twoButton = .button(with: twoConfiguration, actions: ({ _ in
             self.press(button: .num2)
         }, { _ in
@@ -192,7 +192,7 @@ class CherryMPController : ControlsController {
         }
         view.addSubview(twoButton)
         
-        let oneConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "1.circle.fill"), nil, .medium)
+        let oneConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "1.circle.fill"), nil, .medium)
         oneButton = .button(with: oneConfiguration, actions: ({ _ in
             self.press(button: .num1)
         }, { _ in
@@ -203,7 +203,7 @@ class CherryMPController : ControlsController {
         }
         view.addSubview(oneButton)
         
-        let threeConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "3.circle.fill"), nil, .medium)
+        let threeConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "3.circle.fill"), nil, .medium)
         threeButton = .button(with: threeConfiguration, actions: ({ _ in
             self.press(button: .num3)
         }, { _ in
@@ -256,7 +256,7 @@ class CherryMPController : ControlsController {
             return
         }
         
-        if windowScene.effectiveGeometry.interfaceOrientation.isPortrait {
+        if windowScene.interfaceOrientation.isPortrait {
             view.addConstraints(isPad ? constraints.pad.portrait : constraints.phone.portrait)
         } else {
             view.addConstraints(isPad ? constraints.pad.landscape : constraints.phone.landscape)

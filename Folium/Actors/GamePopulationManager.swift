@@ -57,8 +57,8 @@ actor GamePopulationManager {
             return empty
         }
         
-        let systemDirectoryURL = documentDirectoryURL.appending(component: await system.string)
-        let gamesDirectoryURL = systemDirectoryURL.appending(component: "games")
+        let systemDirectoryURL = documentDirectoryURL.appendingPathComponent(await system.string)
+        let gamesDirectoryURL = systemDirectoryURL.appendingPathComponent("games")
         
         guard let directoryEnumerator = fileManager.enumerator(at: gamesDirectoryURL, includingPropertiesForKeys: [.fileSizeKey]) else {
             return empty

@@ -304,7 +304,7 @@ class ScreensController : UIViewController {
         }
         
         if #available(iOS 18.0, *) {
-            tabController.setTabBarHidden(windowScene.effectiveGeometry.interfaceOrientation.isLandscape, animated: true)
+            tabController.setTabBarHidden(windowScene.interfaceOrientation.isLandscape, animated: true)
         }
     }
     
@@ -317,10 +317,10 @@ class ScreensController : UIViewController {
         let isPad: Bool = UIDevice.current.userInterfaceIdiom == .pad
         coordinator.animate { context in } completion: { context in
             if #available(iOS 18.0, *) {
-                tabController.setTabBarHidden(windowScene.effectiveGeometry.interfaceOrientation.isLandscape, animated: true)
+                tabController.setTabBarHidden(windowScene.interfaceOrientation.isLandscape, animated: true)
             }
             
-            if windowScene.effectiveGeometry.interfaceOrientation.isPortrait {
+            if windowScene.interfaceOrientation.isPortrait {
                 self.view.removeConstraints(isPad ? self.constraints.pad.landscape : self.constraints.phone.landscape)
                 self.view.addConstraints(isPad ? self.constraints.pad.portrait : self.constraints.phone.portrait)
             } else {

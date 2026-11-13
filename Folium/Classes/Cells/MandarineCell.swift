@@ -32,11 +32,11 @@ class MandarineCell : GameCell {
         }
         
         let artworkDirectoryURL: URL = documentDirectoryURL
-            .appending(component: game.system.string)
-            .appending(component: "artworks")
+            .appendingPathComponent(game.system.string)
+            .appendingPathComponent("artworks")
         
-        let customArtworkURL: URL = artworkDirectoryURL.appending(component: "\(game.details.fileNameWithoutSpaces.lowercased())_custom.jpg")
-        let defaultArtworkURL: URL = artworkDirectoryURL.appending(component: "\(game.details.fileNameWithoutSpaces.lowercased()).jpg")
+        let customArtworkURL: URL = artworkDirectoryURL.appendingPathComponent("\(game.details.fileNameWithoutSpaces.lowercased())_custom.jpg")
+        let defaultArtworkURL: URL = artworkDirectoryURL.appendingPathComponent("\(game.details.fileNameWithoutSpaces.lowercased()).jpg")
         
         hasCustomArtwork = fileManager.fileExists(atPath: customArtworkURL.path)
         hasDefaultArtwork = fileManager.fileExists(atPath: defaultArtworkURL.path)
@@ -72,7 +72,7 @@ class MandarineCell : GameCell {
             UIMenu(title: "Artwork", image: UIImage(systemName: "photo"), children: [
                 UIDeferredMenuElement.uncached { completion in
                     var elements: [UIMenuElement] = [
-                        UIAction(title: "Import", image: UIImage(systemName: "arrow.down.circle")) { action in
+                        UIAction.compat(title: "Import", image: UIImage(systemName: "arrow.down.circle")) { action in
                             let imagePickerController: UIImagePickerController = .init()
                             imagePickerController.allowsEditing = true
                             imagePickerController.delegate = self
@@ -83,7 +83,7 @@ class MandarineCell : GameCell {
                     ]
                     
                     if self.hasCustomArtwork {
-                        elements.append(UIAction(title: "Delete",
+                        elements.append(UIAction.compat(title: "Delete",
                                                  image: UIImage(systemName: "minus.circle"),
                                                  attributes: .destructive) { action in
                             _ = Task {
@@ -103,7 +103,7 @@ class MandarineCell : GameCell {
                 }
             ]),
             UIMenu(options: .displayInline, children: [
-                UIAction(title: "Delete", image: UIImage(systemName: "minus.circle"), attributes: .destructive) { action in
+                UIAction.compat(title: "Delete", image: UIImage(systemName: "minus.circle"), attributes: .destructive) { action in
                     let parentDirectoryURL: URL = game.details.fileURL.deletingLastPathComponent()
                     
                     let alertController: UIAlertController = UIAlertController(title: "Delete Game?",
@@ -114,7 +114,7 @@ class MandarineCell : GameCell {
                         _ = Task {
                             do {
                                 for file in game.mandarineSystem.files(from: game.details.fileURL) {
-                                    try self.fileManager.removeItem(at: parentDirectoryURL.appending(component: file))
+                                    try self.fileManager.removeItem(at: parentDirectoryURL.appendingPathComponent(file))
                                 }
                                 
                                 try self.fileManager.removeItem(at: game.details.fileURL)
@@ -157,11 +157,11 @@ extension MandarineCell : UIImagePickerControllerDelegate, UINavigationControlle
         }
         
         let artworkDirectoryURL: URL = documentDirectoryURL
-            .appending(component: game.system.string)
-            .appending(component: "artworks")
+            .appendingPathComponent(game.system.string)
+            .appendingPathComponent("artworks")
         
-        let customArtworkURL: URL = artworkDirectoryURL.appending(component: "\(game.details.fileNameWithoutSpaces.lowercased())_custom.jpg")
-        let defaultArtworkURL: URL = artworkDirectoryURL.appending(component: "\(game.details.fileNameWithoutSpaces.lowercased()).jpg")
+        let customArtworkURL: URL = artworkDirectoryURL.appendingPathComponent("\(game.details.fileNameWithoutSpaces.lowercased())_custom.jpg")
+        let defaultArtworkURL: URL = artworkDirectoryURL.appendingPathComponent("\(game.details.fileNameWithoutSpaces.lowercased()).jpg")
         
         _  = Task {
             do {

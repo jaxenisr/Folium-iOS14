@@ -30,8 +30,8 @@ final class MicrophoneAuthorizationController : OBController {
                                                                                 font: UIFont.regular(from: .body),
                                                                                 text: "Folium may require access to Microphone where it is used for game and system functionality")
         
-        let buttons: [(UIButton.Configuration, @MainActor (UIViewController) async -> Void)] = [
-            (UIButton.Configuration.configuration(.large, .capsule, nil, "Continue"), { controller in
+        let buttons: [(FoliumButtonConfiguration, @MainActor (UIViewController) async -> Void)] = [
+            (FoliumButtonConfiguration.configuration(.large, .capsule, nil, "Continue"), { controller in
                 await handler(controller)
             })
         ]

@@ -29,13 +29,13 @@ class LycheeController : ControlsController {
         stackView.spacing = 20
         view.addSubview(stackView)
         
-        // var settingsConfiguration: UIButton.Configuration = UIButton.Configuration.glass()
+        // var settingsConfiguration: FoliumButtonConfiguration = FoliumButtonConfiguration.glass()
         // settingsConfiguration.buttonSize = .medium
         // settingsConfiguration.cornerStyle = .capsule
         // settingsConfiguration.image = UIImage(systemName: "ellipsis")?
         //     .applyingSymbolConfiguration(UIImage.SymbolConfiguration(scale: .medium))
         
-        let settingsConfiguration: UIButton.Configuration = .configuration(.medium, .capsule, UIImage(systemName: "ellipsis"), nil, .medium)
+        let settingsConfiguration: FoliumButtonConfiguration = .configuration(.medium, .capsule, UIImage(systemName: "ellipsis"), nil, .medium)
         settingsButton = .button(with: settingsConfiguration,
                                  actions: ({ _ in }, { _ in }), UIMenu(children: [
                                     UIDeferredMenuElement.uncached { completion in
@@ -123,13 +123,13 @@ class LycheeController : ControlsController {
             return
         }
         
-        // var selectConfiguration: UIButton.Configuration = UIButton.Configuration.glass()
+        // var selectConfiguration: FoliumButtonConfiguration = FoliumButtonConfiguration.glass()
         // selectConfiguration.buttonSize = .medium
         // selectConfiguration.cornerStyle = .capsule
         // selectConfiguration.image = UIImage(systemName: "minus")?
         //     .applyingSymbolConfiguration(UIImage.SymbolConfiguration(scale: .medium))
         
-        let selectConfiguration: UIButton.Configuration = .configuration(.medium, .capsule, UIImage(systemName: "minus"), nil, .medium)
+        let selectConfiguration: FoliumButtonConfiguration = .configuration(.medium, .capsule, UIImage(systemName: "minus"), nil, .medium)
         selectButton = .button(with: selectConfiguration, actions: ({ _ in
             self.press(button: .select)
         }, { _ in
@@ -139,13 +139,13 @@ class LycheeController : ControlsController {
             return
         }
         
-        // var startConfiguration: UIButton.Configuration = UIButton.Configuration.glass()
+        // var startConfiguration: FoliumButtonConfiguration = FoliumButtonConfiguration.glass()
         // startConfiguration.buttonSize = .medium
         // startConfiguration.cornerStyle = .capsule
         // startConfiguration.image = UIImage(systemName: "plus")?
         //     .applyingSymbolConfiguration(UIImage.SymbolConfiguration(scale: .medium))
         
-        let startConfiguration: UIButton.Configuration = .configuration(.medium, .capsule, UIImage(systemName: "plus"), nil, .medium)
+        let startConfiguration: FoliumButtonConfiguration = .configuration(.medium, .capsule, UIImage(systemName: "plus"), nil, .medium)
         startButton = .button(with: startConfiguration, actions: ({ _ in
             self.press(button: .start)
         }, { _ in
@@ -155,7 +155,7 @@ class LycheeController : ControlsController {
             return
         }
         
-        let upConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "chevron.up"), nil, .large)
+        let upConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "chevron.up"), nil, .large)
         upButton = .button(with: upConfiguration, actions: ({ _ in
             self.press(button: .up)
         }, { _ in
@@ -166,7 +166,7 @@ class LycheeController : ControlsController {
         }
         view.addSubview(upButton)
         
-        let downConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "chevron.down"), nil, .large)
+        let downConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "chevron.down"), nil, .large)
         downButton = .button(with: downConfiguration, actions: ({ _ in
             self.press(button: .down)
         }, { _ in
@@ -177,7 +177,7 @@ class LycheeController : ControlsController {
         }
         view.addSubview(downButton)
         
-        let leftConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "chevron.left"), nil, .large)
+        let leftConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "chevron.left"), nil, .large)
         leftButton = .button(with: leftConfiguration, actions: ({ _ in
             self.press(button: .left)
         }, { _ in
@@ -188,7 +188,7 @@ class LycheeController : ControlsController {
         }
         view.addSubview(leftButton)
         
-        let rightConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "chevron.right"), nil, .large)
+        let rightConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "chevron.right"), nil, .large)
         rightButton = .button(with: rightConfiguration, actions: ({ _ in
             self.press(button: .right)
         }, { _ in
@@ -199,7 +199,7 @@ class LycheeController : ControlsController {
         }
         view.addSubview(rightButton)
         
-        let southConfiguration: UIButton.Configuration = .configuration(.large, .capsule, nil, "B", .large)
+        let southConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, nil, "B", .large)
         southButton = .button(with: southConfiguration, actions: ({ _ in
             self.press(button: .b)
         }, { _ in
@@ -210,7 +210,7 @@ class LycheeController : ControlsController {
         }
         view.addSubview(southButton)
         
-        let eastConfiguration: UIButton.Configuration = .configuration(.large, .capsule, nil, "A", .large)
+        let eastConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, nil, "A", .large)
         eastButton = .button(with: eastConfiguration, actions: ({ _ in
             self.press(button: .a)
         }, { _ in
@@ -221,7 +221,7 @@ class LycheeController : ControlsController {
         }
         view.addSubview(eastButton)
         
-        let northConfiguration: UIButton.Configuration = .configuration(.large, .capsule, nil, "X", .large)
+        let northConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, nil, "X", .large)
         northButton = .button(with: northConfiguration, actions: ({ _ in
             self.press(button: .x)
         }, { _ in
@@ -232,7 +232,7 @@ class LycheeController : ControlsController {
         }
         view.addSubview(northButton)
         
-        let westConfiguration: UIButton.Configuration = .configuration(.large, .capsule, nil, "Y", .large)
+        let westConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, nil, "Y", .large)
         westButton = .button(with: westConfiguration, actions: ({ _ in
             self.press(button: .y)
         }, { _ in
@@ -243,7 +243,7 @@ class LycheeController : ControlsController {
         }
         view.addSubview(westButton)
         
-        let l1Configuration: UIButton.Configuration = .configuration(.large, .capsule, nil, "L", .large)
+        let l1Configuration: FoliumButtonConfiguration = .configuration(.large, .capsule, nil, "L", .large)
         l1Button = .button(with: l1Configuration, actions: ({ _ in
             self.press(button: .l)
         }, { _ in
@@ -254,7 +254,7 @@ class LycheeController : ControlsController {
         }
         view.addSubview(l1Button)
         
-        let r1Configuration: UIButton.Configuration = .configuration(.large, .capsule, nil, "R", .large)
+        let r1Configuration: FoliumButtonConfiguration = .configuration(.large, .capsule, nil, "R", .large)
         r1Button = .button(with: r1Configuration, actions: ({ _ in
             self.press(button: .r)
         }, { _ in
@@ -287,7 +287,7 @@ class LycheeController : ControlsController {
             return
         }
         
-        if windowScene.effectiveGeometry.interfaceOrientation.isPortrait {
+        if windowScene.interfaceOrientation.isPortrait {
             view.addConstraints(isPad ? constraints.pad.portrait : constraints.phone.portrait)
         } else {
             view.addConstraints(isPad ? constraints.pad.landscape : constraints.phone.landscape)

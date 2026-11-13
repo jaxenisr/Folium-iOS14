@@ -14,6 +14,7 @@ import SettingsKit
 import StoreKit
 import UIKit
 
+@available(iOS 15.0, *)
 struct Purchase {
     enum PurchaseError: Error {
         case failed
@@ -112,6 +113,7 @@ enum ApplicationSettingsItems : String, CaseIterable {
                            details: details,
                            color: .tintColor,
                            handler: { controller in
+                    @available(iOS 15.0, *)
                     func purchase(_ completionHandler: @escaping () -> Void) async {
                         do {
                             _ = try await Purchase.purchase(productID: "00000003")
@@ -137,16 +139,22 @@ enum ApplicationSettingsItems : String, CaseIterable {
                                                                                                  font: UIFont.regular(from: .body),
                                                                                                  text: "Access extra features not integral to the functionality of the app or emulation with more to be added")
                         
-                        let buttons: [(UIButton.Configuration, @MainActor (UIViewController) async -> Void)] = [
-                            (UIButton.Configuration.configuration(.large, .capsule, nil, "Cancel"), { controller in
+                        let buttons: [(FoliumButtonConfiguration, @MainActor (UIViewController) async -> Void)] = [
+                            (FoliumButtonConfiguration.configuration(.large, .capsule, nil, "Cancel"), { controller in
                                 onMainThread {
                                     controller.dismiss(animated: true)
                                 }
                             }),
-                            (UIButton.Configuration.configuration(.large, .capsule, nil, "Purchase",
+                            (FoliumButtonConfiguration.configuration(.large, .capsule, nil, "Purchase",
                                                                   .large, .tintColor, inverseColor: true), { controller in
                                                                       _ = Task {
-                                                                          await purchase {
+                                                                          if #available(iOS 15.0, *) {
+                                                                              await purchase {
+                                                                                  onMainThread {
+                                                                                      controller.dismiss(animated: true)
+                                                                                  }
+                                                                              }
+                                                                          } else {
                                                                               onMainThread {
                                                                                   controller.dismiss(animated: true)
                                                                               }
@@ -247,17 +255,19 @@ enum ApplicationSettingsItems : String, CaseIterable {
                 _ = Task {
                     var result: Bool = false
                     
-                    try await AppStore.sync()
-                    for await entitlement in Transaction.currentEntitlements {
-                        guard case .verified(let transaction) = entitlement else {
-                            continue
+                    if #available(iOS 15.0, *) {
+                        try await AppStore.sync()
+                        for await entitlement in Transaction.currentEntitlements {
+                            guard case .verified(let transaction) = entitlement else {
+                                continue
+                            }
+                            
+                            result = transaction.revocationDate.isNil
+                            UserDefaults.standard.set(result, forKey: "extraFeaturesPurchased")
+                            NotificationCenter.default.post(name: NSNotification.Name("extraFeaturesStatusDidChange"), object: result)
+                            
+                            await transaction.finish()
                         }
-                        
-                        result = transaction.revocationDate.isNil
-                        UserDefaults.standard.set(result, forKey: "extraFeaturesPurchased")
-                        NotificationCenter.default.post(name: NSNotification.Name("extraFeaturesStatusDidChange"), object: result)
-                        
-                        await transaction.finish()
                     }
                     
                     var title: String = "Success"
