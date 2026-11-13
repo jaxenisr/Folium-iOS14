@@ -26,6 +26,10 @@ on:
         description: "Build with TXM JIT support (iOS 26+ on iPhone 15 Pro / A17 Pro and newer). Turn off to build stock Folium."
         type: boolean
         default: true
+      runner:
+        description: "Runner image label that provides Xcode 26 or newer (e.g. macos-26, or a self-hosted label with Xcode 27)"
+        required: false
+        default: "macos-26"
 
 permissions:
   contents: write
@@ -46,9 +50,10 @@ env:
 jobs:
   build:
     name: Build unsigned IPA
-    # The project is saved in Xcode 27 format (objectVersion 110), so it needs
-    # GitHub's Xcode 27 image (macOS 27, Apple Silicon).
-    runs-on: xcode-27
+    # The project is saved in a recent project format (objectVersion 110), so it
+    # needs Xcode 26 or newer. macos-26 ships Xcode 26; set the "runner" input to
+    # a label with Xcode 27 if this image's Xcode cannot open the project.
+    runs-on: ${{ github.event.inputs.runner || 'macos-26' }}
     timeout-minutes: 120
 
     steps:
@@ -119,6 +124,38 @@ jobs:
             fi
           done
           exit $missing
+
+      # Cytrus hands the core URL.path, which is empty for a custom scheme. Artic Base
+      # launches pass a pseudo-URL ("articbase://host:port") instead of a game file, so
+      # forward the absolute string for that scheme (idempotent; fails loudly if the
+      # bridge changes shape).
+      - name: Patch Cytrus bridge for Artic Base URLs
+        run: |
+          python3 - <<'PY'
+          import sys
+
+          path = "Cytrus/Cytrus.swift"
+          old = """    public func insertDisc(at url: URL) {
+                  cytrus.insert_disc(std.string(url.path))
+              }"""
+          new = """    public func insertDisc(at url: URL) {
+                  // Artic Base uses a pseudo-URL (articbase://host:port) instead of a file path.
+                  let path: String = url.scheme == "articbase" ? url.absoluteString : url.path
+                  cytrus.insert_disc(std.string(path))
+              }"""
+
+          with open(path) as handle:
+              source = handle.read()
+
+          if new in source:
+              print("Cytrus Artic Base bridge already patched")
+          elif source.count(old) == 1:
+              with open(path, "w") as handle:
+                  handle.write(source.replace(old, new))
+              print("Patched Cytrus Artic Base bridge")
+          else:
+              sys.exit("::error::Could not patch Cytrus/Cytrus.swift: insertDisc(at:) changed shape")
+          PY
 
       # ---------------------------------------------------------------------------------
       # TXM JIT support (iOS 26+, A17 Pro / M4 and newer)
@@ -644,14 +681,34 @@ jobs:
               return std::make_unique<Dynarmic::A32::Jit>(config);""")
           PY
 
-      - name: Select Xcode 27
+      - name: Select Xcode
         run: |
-          XCODE=$(ls -d /Applications/Xcode_27*.app 2>/dev/null | grep -vi beta | sort -V | tail -1)
-          [ -z "$XCODE" ] && XCODE=$(ls -d /Applications/Xcode_27*.app | sort -V | tail -1)
+          set -euo pipefail
+          XCODE=""
+          for major in 27 26; do
+            XCODE=$(ls -d /Applications/Xcode_${major}*.app 2>/dev/null | grep -vi beta | sort -V | tail -1 || true)
+            [ -n "$XCODE" ] && break
+          done
+          if [ -z "$XCODE" ]; then
+            echo "Installed Xcode versions:"
+            ls -d /Applications/Xcode*.app 2>/dev/null || true
+            echo "::error::No Xcode 26 or newer found on this runner. Set the 'runner' workflow input to an image that provides one."
+            exit 1
+          fi
           echo "Using $XCODE"
           sudo xcode-select -s "$XCODE/Contents/Developer"
           xcodebuild -version
           xcodebuild -showsdks | grep -i iphoneos
+
+      - name: Check that this Xcode can open the project
+        run: |
+          mkdir -p build
+          if ! xcodebuild -list -project "$PROJECT" > build/xcode-project-list.log 2>&1; then
+            cat build/xcode-project-list.log
+            echo "::error::$PROJECT is saved in a newer project format (objectVersion 110) than this Xcode supports. Re-run with the 'runner' input pointing at an image that ships Xcode 27 or newer."
+            exit 1
+          fi
+          cat build/xcode-project-list.log
 
       # The committed Package.resolved pins SharedDependencies to an old commit
       # that predates its bundled Boost headers (nihstro then fails with
@@ -785,6 +842,7 @@ jobs:
           CMAKE
 
           # 4) Configure + build for iOS arm64
+          command -v ninja >/dev/null || brew install ninja
           cmake --version | head -1
           cmake -S "$W" -B "$W/build" -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \

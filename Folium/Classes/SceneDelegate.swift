@@ -90,6 +90,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         window.tintColor = .systemIndigo
         window.makeKeyAndVisible()
         
+        initializeUserDefaultsWithDefaultValues()
+        
         _ = Task {
             try await directoryManager.initializeSystemDirectoriesForInitialLaunch()
             
@@ -138,8 +140,6 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 }
             }
         }
-        
-        initializeUserDefaultsWithDefaultValues()
     }
 
     func sceneDidDisconnect(_ scene: UIScene) {
@@ -159,13 +159,16 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     }
     
     private func initializeUserDefaultsWithDefaultValues() {
+        let jitAvailable: Bool = JITSupport.isAvailable
+        print("[Folium] Executable memory (JIT) available: \(jitAvailable). 3DS CPU and shader JIT default to \(jitAvailable ? "on" : "off").")
+        
         let systemsWithDefaultValues: [System : [String : Any]] = [
             .cytrus : [
                 "asyncFilesystemOperations" : true,
                 "asyncPresentation" : true,
-                "asyncShaderCompilation" : false,
+                "asyncShaderCompilation" : true,
                 "cpuClockPercent" : 100,
-                "cpuJIT" : false,
+                "cpuJIT" : jitAvailable,
                 "deterministicAsyncOperations" : false,
                 "fastInterpreter" : true,
                 "new3DSMode" : true,
@@ -182,9 +185,9 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 
                 "resolutionScaleFactor" : 1,
                 
-                "shaderJIT" : false,
-                "shadersAccurateMultiply" : true,
-                "spirvOptimizer" : false,
+                "shaderJIT" : jitAvailable,
+                "shadersAccurateMultiply" : false,
+                "spirvOptimizer" : true,
                 "spirvShaderGeneration" : true,
                 
                 "simulate3DSGPUTimings" : false,
@@ -274,6 +277,45 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             if userDefaults.value(forKey: "folium.\(key)") == nil {
                 userDefaults.set(value, forKey: "folium.\(key)")
             }
+        }
+        
+        applyCytrusPerformanceDefaultsIfNeeded(jitAvailable)
+    }
+    
+    /// One-time migration so installs created by older builds pick up the 3DS performance
+    /// defaults instead of keeping the values those builds wrote. Only values that still match
+    /// the previous default are changed, so explicit user choices are preserved.
+    private func applyCytrusPerformanceDefaultsIfNeeded(_ jitAvailable: Bool) {
+        let migrationKey: String = "folium.cytrusPerformanceDefaultsApplied"
+        guard !userDefaults.bool(forKey: migrationKey) else {
+            return
+        }
+        userDefaults.set(true, forKey: migrationKey)
+        
+        let previousDefaults: [String : Bool] = [
+            "asyncShaderCompilation" : false,
+            "cpuJIT" : false,
+            "shaderJIT" : false,
+            "shadersAccurateMultiply" : true,
+            "spirvOptimizer" : false
+        ]
+        let updatedDefaults: [String : Bool] = [
+            "asyncShaderCompilation" : true,
+            "cpuJIT" : jitAvailable,
+            "shaderJIT" : jitAvailable,
+            "shadersAccurateMultiply" : false,
+            "spirvOptimizer" : true
+        ]
+        
+        for (key, previousValue) in previousDefaults {
+            let fullKey: String = "cytrus.\(key)"
+            guard let currentValue: Bool = userDefaults.object(forKey: fullKey) as? Bool,
+                  currentValue == previousValue,
+                  let updatedValue: Bool = updatedDefaults[key] else {
+                continue
+            }
+            
+            userDefaults.set(updatedValue, forKey: fullKey)
         }
     }
     

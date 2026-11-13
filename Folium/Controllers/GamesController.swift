@@ -6,6 +6,7 @@
 //
 
 import ColourKit
+import Cytrus
 import ExtensionsKit
 import FontKit
 import MultipeerConnectivity
@@ -191,6 +192,11 @@ class GamesController : UICollectionViewController {
                                     }
                                 ])
                             ]),
+                            UIMenu(options: .displayInline, children: [
+                                UIAction(title: "Artic Base", subtitle: "Stream a game from a 3DS", image: UIImage(systemName: "wifi")) { action in
+                                    self.presentArticBasePrompt()
+                                }
+                            ]),
                             UIAction(title: self.selectedSnapshot.string, subtitle: "Open in Files", image: UIImage(systemName: "arrow.up.forward.app")) { action in
                                 if let documentDirectoryURL: URL = .documentDirectoryURL, let sharedDocumentsURL: URL = URL(string: "shareddocuments://\(documentDirectoryURL.path)") {
                                     let url: URL = sharedDocumentsURL.appending(component: self.selectedSnapshot.string)
@@ -364,6 +370,71 @@ class GamesController : UICollectionViewController {
         super.viewWillAppear(animated)
         if #available(iOS 18.0, *), let tabBarController {
             tabBarController.setTabBarHidden(false, animated: true)
+        }
+    }
+    
+    // MARK: Artic Base (3DS streaming)
+    
+    private func presentArticBasePrompt() {
+        guard let tabController: TabController = tabBarController as? TabController, tabController.game == nil else {
+            presentArticBaseAlert(title: "Game Running", message: "Stop the game that is currently running before connecting to Artic Base.")
+            return
+        }
+        
+        let alertController: UIAlertController = UIAlertController(title: "Artic Base",
+                                                                   message: "Enter the address of the Nintendo 3DS running Artic Base. Both devices need to be on the same network.",
+                                                                   preferredStyle: .alert)
+        alertController.addTextField { textField in
+            textField.placeholder = "192.168.1.50"
+            textField.text = UserDefaults.standard.string(forKey: ArticBase.addressKey)
+            textField.keyboardType = .numbersAndPunctuation
+            textField.autocapitalizationType = .none
+            textField.autocorrectionType = .no
+            textField.clearButtonMode = .whileEditing
+        }
+        
+        alertController.addAction(UIAlertAction(title: "Cancel", style: .cancel))
+        alertController.addAction(UIAlertAction(title: "Connect", style: .default) { [weak self, weak alertController] _ in
+            guard let self else {
+                return
+            }
+            
+            let rawValue: String = alertController?.textFields?.first?.text ?? ""
+            guard let address: String = ArticBase.address(from: rawValue), let url: URL = ArticBase.url(for: address) else {
+                self.presentArticBaseAlert(title: "Invalid Address",
+                                           message: "Use the IPv4 address or hostname of the 3DS, optionally followed by a port, for example 192.168.1.50:5543.")
+                return
+            }
+            
+            UserDefaults.standard.set(address, forKey: ArticBase.addressKey)
+            self.startArticBase(url, address: address)
+        })
+        
+        present(alertController, animated: true)
+    }
+    
+    private func presentArticBaseAlert(title: String, message: String) {
+        let alertController: UIAlertController = UIAlertController(title: title, message: message, preferredStyle: .alert)
+        alertController.addAction(UIAlertAction(title: "Dismiss", style: .cancel))
+        present(alertController, animated: true)
+    }
+    
+    private func startArticBase(_ url: URL, address: String) {
+        guard let tabController: TabController = tabBarController as? TabController, tabController.game == nil else {
+            return
+        }
+        
+        Task {
+            let cytrusSystem: CytrusSystem = await tabController.gamePopulationManager.cytrusSystem
+            
+            let details: Details = Details(articBaseAddress: address)
+            details.fileURL = url
+            
+            let game: CytrusGame = CytrusGame(details: details, cytrusSystem: cytrusSystem, system: .cytrus, boxart: NSData())
+            
+            tabController.game = game
+            tabController.switchEmulationController(with: CytrusController())
+            tabController.selectedIndex = .emulationController
         }
     }
     
