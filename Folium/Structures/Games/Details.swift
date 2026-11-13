@@ -35,6 +35,14 @@ nonisolated final class Details {
         fileURL = url
     }
     
+    /// Creates details for a 3DS game streamed from a console running Artic Base.
+    init(articBaseAddress address: String) {
+        fileExtension = "articbase"
+        fileName = "Artic Base (\(address))"
+        fileSize = "Streamed"
+        fileURL = ArticBase.url(for: address) ?? URL(fileURLWithPath: "/")
+    }
+    
     var fileNameWithoutSpaces: String {
         fileName.replacingOccurrences(of: " ", with: "_").trimmingCharacters(in: .whitespacesAndNewlines)
     }
