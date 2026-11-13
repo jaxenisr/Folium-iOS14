@@ -1,0 +1,48 @@
+//
+//  OBControllerWithListConfiguration 2.swift
+//  AntiqueKit
+//
+//  Created by Jarrod Norwell on 13/5/2026.
+//
+
+import ExtensionsKit
+import ColourKit
+import SwiftUI
+import UIKit
+
+public struct OBControllerConfiguration {
+    public var image: UIImage? = nil
+    public var textConfiguration, secondaryConfiguration: LabelConfiguration
+    public var tertiaryConfiguration: LabelConfiguration? = nil
+    public var shouldUseVibrancy: Bool
+    
+    public let buttons: [(configuration: FoliumButtonConfiguration, action: @MainActor (UIViewController) async -> Void)]
+    
+    var colors: [Colour] = Colour.vibrantBlues
+    
+    public init(image: UIImage? = nil,
+                textConfiguration: LabelConfiguration, secondaryConfiguration: LabelConfiguration, tertiaryConfiguration: LabelConfiguration? = nil,
+                shouldUseVibrancy: Bool = true,
+                buttons: [(configuration: FoliumButtonConfiguration, action: @MainActor (UIViewController) async -> Void)],
+                colors: [Colour] = Colour.vibrantBlues) {
+        self.image = image
+        self.textConfiguration = textConfiguration
+        self.secondaryConfiguration = secondaryConfiguration
+        self.tertiaryConfiguration = tertiaryConfiguration
+        self.shouldUseVibrancy = shouldUseVibrancy
+        self.buttons = buttons
+        self.colors = colors
+    }
+    
+    public static var noop: OBControllerConfiguration {
+        OBControllerConfiguration(textConfiguration: LabelConfiguration(alignment: .left,
+                                                                        color: .label,
+                                                                        font: .regular(from: .largeTitle),
+                                                                        text: ""),
+                                  secondaryConfiguration: LabelConfiguration(alignment: .left,
+                                                                             color: .label,
+                                                                             font: .regular(from: .largeTitle),
+                                                                             text: ""),
+                                  buttons: [])
+    }
+}

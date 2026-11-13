@@ -27,8 +27,8 @@ class WhatsNewController : OBControllerWithList {
                                                                                 font: UIFont.regular(from: .body),
                                                                                 text: "What's new in the latest version of Folium")
         
-        let buttons: [(UIButton.Configuration, @MainActor (UIViewController) async -> Void)] = [
-            (UIButton.Configuration.configuration(.large, .capsule, nil, "Continue"), { controller in
+        let buttons: [(FoliumButtonConfiguration, @MainActor (UIViewController) async -> Void)] = [
+            (FoliumButtonConfiguration.configuration(.large, .capsule, nil, "Continue"), { controller in
                 UserDefaults.standard.set(true, forKey: "folium.2.2.8.whatsNewComplete")
                 
                 controller.dismiss(animated: true)

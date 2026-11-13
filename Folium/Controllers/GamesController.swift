@@ -152,56 +152,60 @@ class GamesController : UICollectionViewController {
                         completion([
                             UIMenu(options: .displayInline, children: [
                                 UIMenu(title: "Bandai", image: UIImage(systemName: "cpu"), children: [
-                                    UIAction(title: "WonderSwan", subtitle: "+ WonderSwan Color") { action in
+                                    UIAction.compat(title: "WonderSwan", subtitle: "+ WonderSwan Color") { action in
                                         self.selectedSnapshot = .durian
                                     }
                                 ]),
                                 UIMenu(title: "Coleco", image: UIImage(systemName: "cpu"), children: [
-                                    UIAction(title: "ColecoVision") { action in
+                                    UIAction.compat(title: "ColecoVision") { action in
                                         self.selectedSnapshot = .cherry
                                     }
                                 ]),
                                 UIMenu(title: "Nintendo", image: UIImage(systemName: "cpu"), children: [
-                                    UIAction(title: "3DS", subtitle: "+ New 3DS") { action in
+                                    UIAction.compat(title: "3DS", subtitle: "+ New 3DS") { action in
                                         self.selectedSnapshot = .cytrus
                                     },
-                                    UIAction(title: "DS", subtitle: "+ DSi") { action in
+                                    UIAction.compat(title: "DS", subtitle: "+ DSi") { action in
                                         self.selectedSnapshot = .grape
                                     },
-                                    UIAction(title: "Game Boy", subtitle: "+ Game Boy Color") { action in
+                                    UIAction.compat(title: "Game Boy", subtitle: "+ Game Boy Color") { action in
                                         self.selectedSnapshot = .kiwi
                                     },
-                                    UIAction(title: "Game Boy Advance") { action in
+                                    UIAction.compat(title: "Game Boy Advance") { action in
                                         self.selectedSnapshot = .tomato
                                     },
-                                    UIAction(title: "Nintendo Entertainment System") { action in
+                                    UIAction.compat(title: "Nintendo Entertainment System") { action in
                                         self.selectedSnapshot = .mango
                                     },
-                                    UIAction(title: "Super Nintendo Entertainment System") { action in
+                                    UIAction.compat(title: "Super Nintendo Entertainment System") { action in
                                         self.selectedSnapshot = .lychee
                                     }
                                 ]),
                                 UIMenu(title: "SEGA", image: UIImage(systemName: "cpu"), children: [
-                                    UIAction(title: "Genesis", subtitle: "+ Mega Drive") { action in
+                                    UIAction.compat(title: "Genesis", subtitle: "+ Mega Drive") { action in
                                         self.selectedSnapshot = .plum
                                     }
                                 ]),
                                 UIMenu(title: "Sony", image: UIImage(systemName: "cpu"), children: [
-                                    UIAction(title: "PlayStation 1") { action in
+                                    UIAction.compat(title: "PlayStation 1") { action in
                                         self.selectedSnapshot = .mandarine
                                     }
                                 ])
                             ]),
                             UIMenu(options: .displayInline, children: [
-                                UIAction(title: "Artic Base", subtitle: "Stream a game from a 3DS", image: UIImage(systemName: "wifi")) { action in
+                                UIAction.compat(title: "Artic Base", subtitle: "Stream a game from a 3DS", image: UIImage(systemName: "wifi")) { action in
                                     self.presentArticBasePrompt()
                                 }
                             ]),
-                            UIAction(title: self.selectedSnapshot.string, subtitle: "Open in Files", image: UIImage(systemName: "arrow.up.forward.app")) { action in
+                            UIAction.compat(title: self.selectedSnapshot.string, subtitle: "Open in Files", image: UIImage(systemName: "arrow.up.forward.app")) { action in
                                 if let documentDirectoryURL: URL = .documentDirectoryURL, let sharedDocumentsURL: URL = URL(string: "shareddocuments://\(documentDirectoryURL.path)") {
-                                    let url: URL = sharedDocumentsURL.appending(component: self.selectedSnapshot.string)
+                                    let url: URL = sharedDocumentsURL.appendingPathComponent(self.selectedSnapshot.string)
                                     Task {
-                                        await UIApplication.shared.open(url)
+                                        if #available(iOS 15.0, *) {
+                                            await UIApplication.shared.open(url)
+                                        } else {
+                                            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+                                        }
                                     }
                                 }
                             }
@@ -219,7 +223,7 @@ class GamesController : UICollectionViewController {
                             return
                         }
                         
-                        let leaveAction: UIAction = UIAction(title: "Leave",
+                        let leaveAction: UIAction = UIAction.compat(title: "Leave",
                                                              image: UIImage(systemName: "network.slash"),
                                                              attributes: .destructive) { handler in
                             self.hostingOrJoiningState = .disconnected
@@ -227,14 +231,14 @@ class GamesController : UICollectionViewController {
                             browser.stopBrowsingForPeers()
                         }
                         
-                        let hostAction: UIAction = UIAction(title: self.hostingOrJoiningState == .hosting ? "Hosting" : "Host",
+                        let hostAction: UIAction = UIAction.compat(title: self.hostingOrJoiningState == .hosting ? "Hosting" : "Host",
                                                             image: UIImage(systemName: "wave.3.up"),
                                                             attributes: self.hostingOrJoiningState == .hosting ? .disabled : []) { handler in
                             self.hostingOrJoiningState = .hosting
                             advertiser.startAdvertisingPeer()
                         }
                         
-                        let joinAction: UIAction = UIAction(title: self.hostingOrJoiningState == .joined ? "Joined" : "Join",
+                        let joinAction: UIAction = UIAction.compat(title: self.hostingOrJoiningState == .joined ? "Joined" : "Join",
                                                             image: UIImage(systemName: "wave.3.down"),
                                                             attributes: self.hostingOrJoiningState == .joined ? .disabled : []) { handler in
                             self.hostingOrJoiningState = .joined
@@ -260,7 +264,7 @@ class GamesController : UICollectionViewController {
                             completion([UIMenu(options: .displayInline, preferredElementSize: .medium, children: children)])
                         } else {
                             completion([
-                                UIAction(title: "Extra Features", subtitle: "Requires Purchase", image: UIImage(systemName: "bag")) { action in
+                                UIAction.compat(title: "Extra Features", subtitle: "Requires Purchase", image: UIImage(systemName: "bag")) { action in
                                     if let tabController: TabController = self.tabBarController as? TabController {
                                         tabController.switchSettingsSnapshot(for: .application)
                                         tabController.selectedIndex = .settingsController
@@ -272,7 +276,9 @@ class GamesController : UICollectionViewController {
                 ]))
             ], representativeItem: nil)
         ]
-        navigationItem.style = .browser
+        if #available(iOS 16.0, *) {
+            navigationItem.style = .browser
+        }
         view.backgroundColor = .systemBackground
         
         if #available(iOS 26.0, *) {
@@ -947,9 +953,9 @@ extension GamesController : UIDocumentPickerDelegate, UINavigationControllerDele
         Task {
             await urls.asyncForEach { url in
                 let toURL: URL = if importFileType == .game {
-                    gamesDirectoryURL.appending(component: url.lastPathComponent)
+                    gamesDirectoryURL.appendingPathComponent(url.lastPathComponent)
                 } else {
-                    gamesDirectoryURL.appending(component: currentlyImportingSystemFile ?? url.lastPathComponent)
+                    gamesDirectoryURL.appendingPathComponent(currentlyImportingSystemFile ?? url.lastPathComponent)
                 }
                 
                 do {

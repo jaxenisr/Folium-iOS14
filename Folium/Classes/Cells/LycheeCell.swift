@@ -32,11 +32,11 @@ class LycheeCell : GameCell {
         }
         
         let artworkDirectoryURL: URL = documentDirectoryURL
-            .appending(component: game.system.string)
-            .appending(component: "artworks")
+            .appendingPathComponent(game.system.string)
+            .appendingPathComponent("artworks")
         
-        let customArtworkURL: URL = artworkDirectoryURL.appending(component: "\(game.details.fileNameWithoutSpaces.lowercased())_custom.png")
-        let defaultArtworkURL: URL = artworkDirectoryURL.appending(component: "\(game.details.fileNameWithoutSpaces.lowercased()).png")
+        let customArtworkURL: URL = artworkDirectoryURL.appendingPathComponent("\(game.details.fileNameWithoutSpaces.lowercased())_custom.png")
+        let defaultArtworkURL: URL = artworkDirectoryURL.appendingPathComponent("\(game.details.fileNameWithoutSpaces.lowercased()).png")
         
         hasCustomArtwork = fileManager.fileExists(atPath: customArtworkURL.path)
         hasDefaultArtwork = fileManager.fileExists(atPath: defaultArtworkURL.path)
@@ -72,7 +72,7 @@ class LycheeCell : GameCell {
             UIMenu(title: "Artwork", image: UIImage(systemName: "photo"), children: [
                 UIDeferredMenuElement.uncached { completion in
                     var elements: [UIMenuElement] = [
-                        UIAction(title: "Import", image: UIImage(systemName: "arrow.down.circle")) { action in
+                        UIAction.compat(title: "Import", image: UIImage(systemName: "arrow.down.circle")) { action in
                             let imagePickerController: UIImagePickerController = .init()
                             imagePickerController.allowsEditing = true
                             imagePickerController.delegate = self
@@ -83,7 +83,7 @@ class LycheeCell : GameCell {
                     ]
                     
                     if self.hasCustomArtwork {
-                        elements.append(UIAction(title: "Delete",
+                        elements.append(UIAction.compat(title: "Delete",
                                                  image: UIImage(systemName: "minus.circle"),
                                                  attributes: .destructive) { action in
                             _ = Task {
@@ -103,7 +103,7 @@ class LycheeCell : GameCell {
                 }
             ]),
             UIMenu(options: .displayInline, children: [
-                UIAction(title: "Delete", image: UIImage(systemName: "minus.circle"), attributes: .destructive) { action in
+                UIAction.compat(title: "Delete", image: UIImage(systemName: "minus.circle"), attributes: .destructive) { action in
                     let parentDirectoryURL: URL = game.details.fileURL.deletingLastPathComponent()
                     
                     let alertController: UIAlertController = UIAlertController(title: "Delete Game?",
@@ -153,11 +153,11 @@ extension LycheeCell : UIImagePickerControllerDelegate, UINavigationControllerDe
         }
         
         let artworkDirectoryURL: URL = documentDirectoryURL
-            .appending(component: game.system.string)
-            .appending(component: "artworks")
+            .appendingPathComponent(game.system.string)
+            .appendingPathComponent("artworks")
         
-        let customArtworkURL: URL = artworkDirectoryURL.appending(component: "\(game.details.fileNameWithoutSpaces.lowercased())_custom.png")
-        let defaultArtworkURL: URL = artworkDirectoryURL.appending(component: "\(game.details.fileNameWithoutSpaces.lowercased()).png")
+        let customArtworkURL: URL = artworkDirectoryURL.appendingPathComponent("\(game.details.fileNameWithoutSpaces.lowercased())_custom.png")
+        let defaultArtworkURL: URL = artworkDirectoryURL.appendingPathComponent("\(game.details.fileNameWithoutSpaces.lowercased()).png")
         
         _  = Task {
             do {

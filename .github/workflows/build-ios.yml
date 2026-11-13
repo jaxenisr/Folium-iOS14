@@ -27,9 +27,9 @@ on:
         type: boolean
         default: true
       runner:
-        description: "Runner image label (default: the Xcode 27 preview image, which can open this project's objectVersion 110 format)"
+        description: "Runner image label (default: macos-26, whose Xcode 26 can build an iOS 14 deployment target)"
         required: false
-        default: "xcode-27"
+        default: "macos-26"
 
 permissions:
   contents: write
@@ -50,10 +50,10 @@ env:
 jobs:
   build:
     name: Build unsigned IPA
-    # The project is saved in Xcode 27's project format (objectVersion 110), so it
-    # must be opened with Xcode 27. GitHub's Xcode 27 preview image is arm64 and
-    # provides it; override the "runner" input to use a self-hosted image instead.
-    runs-on: ${{ github.event.inputs.runner || 'xcode-27' }}
+    # Xcode 26 is required: it still accepts an iOS 14 deployment target, while
+    # Xcode 27 rejects anything below iOS 15. The project uses the Xcode 16/26
+    # objectVersion 77 format so Xcode 26 can open it.
+    runs-on: ${{ github.event.inputs.runner || 'macos-26' }}
     timeout-minutes: 120
 
     steps:
@@ -62,13 +62,6 @@ jobs:
         with:
           submodules: recursive
           fetch-depth: 1
-
-      # The Xcode project references AntiqueKit as a *local* package at ../AntiqueKit
-      # (a sibling folder of the repo), so clone it there.
-      - name: Fetch AntiqueKit (local Swift package)
-        run: |
-          git clone --depth 1 https://github.com/jarrodnorwell/AntiqueKit "$GITHUB_WORKSPACE/../AntiqueKit"
-          ls "$GITHUB_WORKSPACE/../AntiqueKit"
 
       # Cytrus (3DS core) looks for Vulkan, glslang and VMA headers in the
       # LunarG Vulkan SDK install on the developer's Mac:
@@ -124,6 +117,21 @@ jobs:
             fi
           done
           exit $missing
+
+      - name: Vendor SharedDependencies for iOS 14
+        run: |
+          DEST="$GITHUB_WORKSPACE/SharedDependencies"
+          rm -rf "$DEST"
+          if [ -n "$SHARED_DEPS_REF" ]; then
+            echo "Using SharedDependencies $SHARED_DEPS_REF"
+            git clone --depth 1 https://github.com/folium-app/SharedDependencies "$DEST"
+            (cd "$DEST" && git fetch --depth 1 origin "$SHARED_DEPS_REF" && git checkout FETCH_HEAD)
+          else
+            git clone --depth 1 https://github.com/folium-app/SharedDependencies "$DEST"
+          fi
+          python3 scripts/configure-ios14-build.py
+          grep -A5 'SharedDependencies' "$PROJECT/project.pbxproj" | head -20
+
 
       # Cytrus hands the core URL.path, which is empty for a custom scheme. Artic Base
       # launches pass a pseudo-URL ("articbase://host:port") instead of a game file, so
@@ -685,14 +693,14 @@ jobs:
         run: |
           set -euo pipefail
           XCODE=""
-          for major in 27 26; do
+          for major in 26; do
             XCODE=$(ls -d /Applications/Xcode_${major}*.app 2>/dev/null | grep -vi beta | sort -V | tail -1 || true)
             [ -n "$XCODE" ] && break
           done
           if [ -z "$XCODE" ]; then
             echo "Installed Xcode versions:"
             ls -d /Applications/Xcode*.app 2>/dev/null || true
-            echo "::error::No Xcode 26 or newer found on this runner. Set the 'runner' workflow input to an image that provides one."
+            echo "::error::No Xcode 26 found. Building an iOS 14 target needs Xcode 26 (Xcode 27 rejects deployment targets below iOS 15); use the macos-26 runner or a self-hosted image with Xcode 26."
             exit 1
           fi
           echo "Using $XCODE"
@@ -705,10 +713,20 @@ jobs:
           mkdir -p build
           if ! xcodebuild -list -project "$PROJECT" > build/xcode-project-list.log 2>&1; then
             cat build/xcode-project-list.log
-            echo "::error::$PROJECT is saved in Xcode 27's project format (objectVersion 110) and this Xcode cannot open it. Re-run with the 'runner' input left at its xcode-27 default (or point it at a self-hosted image with Xcode 27)."
+            echo "::error::$PROJECT could not be opened by this Xcode (expected objectVersion 77). Use the macos-26 runner with Xcode 26."
             exit 1
           fi
           cat build/xcode-project-list.log
+
+      - name: Patch MoltenVK minimum iOS version to 14.0
+        run: |
+          FRAMEWORK="Dependencies/MoltenVK.xcframework/ios-arm64/MoltenVK.framework"
+          BINARY="$FRAMEWORK/MoltenVK"
+          test -f "$BINARY"
+          xcrun vtool -set-build-version ios 14.0 14.0 -replace -output "$BINARY.patched" "$BINARY"
+          mv "$BINARY.patched" "$BINARY"
+          /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 14.0" "$FRAMEWORK/Info.plist"
+          xcrun vtool -show-build "$BINARY" | head -20
 
       # The committed Package.resolved pins SharedDependencies to an old commit
       # that predates its bundled Boost headers (nihstro then fails with
@@ -718,15 +736,6 @@ jobs:
         run: |
           rm -f Folium.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
           rm -rf build/SourcePackages
-
-      - name: Pin SharedDependencies to a known-good commit
-        if: ${{ env.SHARED_DEPS_REF != '' }}
-        run: |
-          echo "Pinning SharedDependencies to $SHARED_DEPS_REF"
-          REF="$SHARED_DEPS_REF" perl -0pi -e \
-            's|(repositoryURL = "https://github.com/folium-app/SharedDependencies";\s*requirement = \{)[^}]*\}|$1\n\t\t\t\tkind = revision;\n\t\t\t\trevision = $ENV{REF};\n\t\t\t}|' \
-            "$PROJECT/project.pbxproj"
-          grep -A5 'folium-app/SharedDependencies' "$PROJECT/project.pbxproj"
 
       - name: Resolve Swift packages
         run: |

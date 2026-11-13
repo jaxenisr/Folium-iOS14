@@ -28,20 +28,20 @@ class PlumMPController : ControlsController {
         stackView.spacing = 20
         view.addSubview(stackView)
         
-        // var settingsConfiguration: UIButton.Configuration = UIButton.Configuration.glass()
+        // var settingsConfiguration: FoliumButtonConfiguration = FoliumButtonConfiguration.glass()
         // settingsConfiguration.buttonSize = .medium
         // settingsConfiguration.cornerStyle = .capsule
         // settingsConfiguration.image = UIImage(systemName: "ellipsis")?
         //     .applyingSymbolConfiguration(UIImage.SymbolConfiguration(scale: .medium))
         
-        let settingsConfiguration: UIButton.Configuration = .configuration(.medium, .capsule, UIImage(systemName: "ellipsis"), nil, .medium)
+        let settingsConfiguration: FoliumButtonConfiguration = .configuration(.medium, .capsule, UIImage(systemName: "ellipsis"), nil, .medium)
         settingsButton = .button(with: settingsConfiguration,
                                  actions: ({ _ in }, { _ in }), UIMenu(preferredElementSize: .medium, children: []))
         guard let settingsButton else {
             return
         }
         
-        let selectConfiguration: UIButton.Configuration = .configuration(.medium, .capsule, UIImage(systemName: "repeat"), nil, .medium)
+        let selectConfiguration: FoliumButtonConfiguration = .configuration(.medium, .capsule, UIImage(systemName: "repeat"), nil, .medium)
         selectButton = .button(with: selectConfiguration, actions: ({ _ in
             self.press(button: .mode)
         }, { _ in
@@ -51,7 +51,7 @@ class PlumMPController : ControlsController {
             return
         }
         
-        let startConfiguration: UIButton.Configuration = .configuration(.medium, .capsule, UIImage(systemName: "plus"), nil, .medium)
+        let startConfiguration: FoliumButtonConfiguration = .configuration(.medium, .capsule, UIImage(systemName: "plus"), nil, .medium)
         startButton = .button(with: startConfiguration, actions: ({ _ in
             self.press(button: .start)
         }, { _ in
@@ -61,7 +61,7 @@ class PlumMPController : ControlsController {
             return
         }
         
-        let upConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "chevron.up"))
+        let upConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "chevron.up"))
         upButton = .button(with: upConfiguration,
                            actions: ({ _ in
             self.press(button: .up)
@@ -73,7 +73,7 @@ class PlumMPController : ControlsController {
         }
         view.addSubview(upButton)
         
-        let downConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "chevron.down"))
+        let downConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "chevron.down"))
         downButton = .button(with: downConfiguration,
                              actions: ({ _ in
             self.press(button: .down)
@@ -85,7 +85,7 @@ class PlumMPController : ControlsController {
         }
         view.addSubview(downButton)
         
-        let leftConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "chevron.left"))
+        let leftConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "chevron.left"))
         leftButton = .button(with: leftConfiguration,
                              actions: ({ _ in
             self.press(button: .left)
@@ -97,7 +97,7 @@ class PlumMPController : ControlsController {
         }
         view.addSubview(leftButton)
         
-        let rightConfiguration: UIButton.Configuration = .configuration(.large, .capsule, UIImage(systemName: "chevron.right"))
+        let rightConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, UIImage(systemName: "chevron.right"))
         rightButton = .button(with: rightConfiguration,
                               actions: ({ _ in
             self.press(button: .right)
@@ -109,7 +109,7 @@ class PlumMPController : ControlsController {
         }
         view.addSubview(rightButton)
         
-        let aConfiguration: UIButton.Configuration = .configuration(.large, .capsule, nil, "A")
+        let aConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, nil, "A")
         aButton = .button(with: aConfiguration,
                           actions: ({ _ in
             self.press(button: .a)
@@ -121,7 +121,7 @@ class PlumMPController : ControlsController {
         }
         view.addSubview(aButton)
         
-        let bConfiguration: UIButton.Configuration = .configuration(.large, .capsule, nil, "B")
+        let bConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, nil, "B")
         bButton = .button(with: bConfiguration,
                           actions: ({ _ in
             self.press(button: .b)
@@ -133,7 +133,7 @@ class PlumMPController : ControlsController {
         }
         view.addSubview(bButton)
         
-        let cConfiguration: UIButton.Configuration = .configuration(.large, .capsule, nil, "C")
+        let cConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, nil, "C")
         cButton = .button(with: cConfiguration,
                           actions: ({ _ in
             self.press(button: .c)
@@ -145,7 +145,7 @@ class PlumMPController : ControlsController {
         }
         view.addSubview(cButton)
         
-        let xConfiguration: UIButton.Configuration = .configuration(.large, .capsule, nil, "X")
+        let xConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, nil, "X")
         xButton = .button(with: xConfiguration,
                           actions: ({ _ in
             self.press(button: .x)
@@ -157,7 +157,7 @@ class PlumMPController : ControlsController {
         }
         view.addSubview(xButton)
         
-        let yConfiguration: UIButton.Configuration = .configuration(.large, .capsule, nil, "Y")
+        let yConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, nil, "Y")
         yButton = .button(with: yConfiguration,
                           actions: ({ _ in
             self.press(button: .y)
@@ -169,7 +169,7 @@ class PlumMPController : ControlsController {
         }
         view.addSubview(yButton)
         
-        let zConfiguration: UIButton.Configuration = .configuration(.large, .capsule, nil, "Z")
+        let zConfiguration: FoliumButtonConfiguration = .configuration(.large, .capsule, nil, "Z")
         zButton = .button(with: zConfiguration,
                           actions: ({ _ in
             self.press(button: .z)
@@ -203,7 +203,7 @@ class PlumMPController : ControlsController {
             return
         }
         
-        if windowScene.effectiveGeometry.interfaceOrientation.isPortrait {
+        if windowScene.interfaceOrientation.isPortrait {
             view.addConstraints(isPad ? constraints.pad.portrait : constraints.phone.portrait)
         } else {
             view.addConstraints(isPad ? constraints.pad.landscape : constraints.phone.landscape)

@@ -32,10 +32,10 @@ class GrapeCell : GameCell {
         }
         
         let artworkDirectoryURL: URL = documentDirectoryURL
-            .appending(component: game.system.string)
-            .appending(component: "artworks")
+            .appendingPathComponent(game.system.string)
+            .appendingPathComponent("artworks")
         
-        let customArtworkURL: URL = artworkDirectoryURL.appending(component: "\(game.details.fileNameWithoutSpaces.lowercased())_custom.png")
+        let customArtworkURL: URL = artworkDirectoryURL.appendingPathComponent("\(game.details.fileNameWithoutSpaces.lowercased())_custom.png")
         
         hasCustomArtwork = fileManager.fileExists(atPath: customArtworkURL.path)
         
@@ -56,7 +56,7 @@ class GrapeCell : GameCell {
             UIMenu(title: "Artwork", image: UIImage(systemName: "photo"), children: [
                 UIDeferredMenuElement.uncached { completion in
                     var elements: [UIMenuElement] = [
-                        UIAction(title: "Import", image: UIImage(systemName: "arrow.down.circle")) { action in
+                        UIAction.compat(title: "Import", image: UIImage(systemName: "arrow.down.circle")) { action in
                             let imagePickerController: UIImagePickerController = .init()
                             imagePickerController.allowsEditing = true
                             imagePickerController.delegate = self
@@ -67,7 +67,7 @@ class GrapeCell : GameCell {
                     ]
                     
                     if self.hasCustomArtwork {
-                        elements.append(UIAction(title: "Delete",
+                        elements.append(UIAction.compat(title: "Delete",
                                                  image: UIImage(systemName: "minus.circle"),
                                                  attributes: .destructive) { action in
                             _ = Task {
@@ -87,7 +87,7 @@ class GrapeCell : GameCell {
                 }
             ]),
             UIMenu(options: .displayInline, children: [
-                UIAction(title: "Delete", image: UIImage(systemName: "minus.circle"), attributes: .destructive) { action in
+                UIAction.compat(title: "Delete", image: UIImage(systemName: "minus.circle"), attributes: .destructive) { action in
                     let parentDirectoryURL: URL = game.details.fileURL.deletingLastPathComponent()
                     
                     let alertController: UIAlertController = UIAlertController(title: "Delete Game?",
@@ -137,10 +137,10 @@ extension GrapeCell : UIImagePickerControllerDelegate, UINavigationControllerDel
         }
         
         let artworkDirectoryURL: URL = documentDirectoryURL
-            .appending(component: game.system.string)
-            .appending(component: "artworks")
+            .appendingPathComponent(game.system.string)
+            .appendingPathComponent("artworks")
         
-        let customArtworkURL: URL = artworkDirectoryURL.appending(component: "\(game.details.fileNameWithoutSpaces.lowercased())_custom.png")
+        let customArtworkURL: URL = artworkDirectoryURL.appendingPathComponent("\(game.details.fileNameWithoutSpaces.lowercased())_custom.png")
         
         _  = Task {
             do {

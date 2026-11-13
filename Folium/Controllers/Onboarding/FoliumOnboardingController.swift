@@ -35,8 +35,8 @@ final class FoliumOnboardingController : OBController {
                                                                                font: .regular(from: .callout),
                                                                                text: "Developed by Jarrod Norwell\nLicensed under GPLv3")
         
-        let buttons: [(UIButton.Configuration, @MainActor (UIViewController) async -> Void)] = [
-            (UIButton.Configuration.configuration(.large, .capsule, nil, "Continue"), { controller in
+        let buttons: [(FoliumButtonConfiguration, @MainActor (UIViewController) async -> Void)] = [
+            (FoliumButtonConfiguration.configuration(.large, .capsule, nil, "Continue"), { controller in
                 await handler(controller)
             })
         ]
