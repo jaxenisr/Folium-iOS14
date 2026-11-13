@@ -27,9 +27,9 @@ on:
         type: boolean
         default: true
       runner:
-        description: "Runner image label that provides Xcode 26 or newer (e.g. macos-26, or a self-hosted label with Xcode 27)"
+        description: "Runner image label (default: the Xcode 27 preview image, which can open this project's objectVersion 110 format)"
         required: false
-        default: "macos-26"
+        default: "xcode-27"
 
 permissions:
   contents: write
@@ -50,10 +50,10 @@ env:
 jobs:
   build:
     name: Build unsigned IPA
-    # The project is saved in a recent project format (objectVersion 110), so it
-    # needs Xcode 26 or newer. macos-26 ships Xcode 26; set the "runner" input to
-    # a label with Xcode 27 if this image's Xcode cannot open the project.
-    runs-on: ${{ github.event.inputs.runner || 'macos-26' }}
+    # The project is saved in Xcode 27's project format (objectVersion 110), so it
+    # must be opened with Xcode 27. GitHub's Xcode 27 preview image is arm64 and
+    # provides it; override the "runner" input to use a self-hosted image instead.
+    runs-on: ${{ github.event.inputs.runner || 'xcode-27' }}
     timeout-minutes: 120
 
     steps:
@@ -705,7 +705,7 @@ jobs:
           mkdir -p build
           if ! xcodebuild -list -project "$PROJECT" > build/xcode-project-list.log 2>&1; then
             cat build/xcode-project-list.log
-            echo "::error::$PROJECT is saved in a newer project format (objectVersion 110) than this Xcode supports. Re-run with the 'runner' input pointing at an image that ships Xcode 27 or newer."
+            echo "::error::$PROJECT is saved in Xcode 27's project format (objectVersion 110) and this Xcode cannot open it. Re-run with the 'runner' input left at its xcode-27 default (or point it at a self-hosted image with Xcode 27)."
             exit 1
           fi
           cat build/xcode-project-list.log
