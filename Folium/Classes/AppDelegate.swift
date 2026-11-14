@@ -10,7 +10,9 @@ import UIKit
 @main final class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        true
+        LaunchDiagnostics.install()
+        LaunchDiagnostics.log("AppDelegate.didFinishLaunching")
+        return true
     }
 
     // MARK: UISceneSession Lifecycle
