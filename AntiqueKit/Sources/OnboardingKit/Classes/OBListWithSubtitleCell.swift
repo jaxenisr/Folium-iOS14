@@ -110,8 +110,8 @@ final class OBListWithSubtitleCell : UICollectionViewListCell {
             .applyingSymbolConfiguration(UIImage.SymbolConfiguration(pointSize: configuration.labels.primary.font.pointSize))
         
         textLabel.font = configuration.labels.primary.font
-        if let attributedText: AttributedString = configuration.labels.primary.attributedText {
-            textLabel.attributedText = NSAttributedString(attributedText)
+        if let attributedText: NSAttributedString = configuration.labels.primary.attributedText {
+            textLabel.attributedText = attributedText
         } else {
             textLabel.text = configuration.labels.primary.text
         }
@@ -120,8 +120,8 @@ final class OBListWithSubtitleCell : UICollectionViewListCell {
         
         if let secondary = configuration.labels.secondary {
             secondaryTextLabel.font = secondary.font
-            if let attributedText: AttributedString = secondary.attributedText {
-                secondaryTextLabel.attributedText = NSAttributedString(attributedText)
+            if let attributedText: NSAttributedString = secondary.attributedText {
+                secondaryTextLabel.attributedText = attributedText
             } else {
                 secondaryTextLabel.text = secondary.text
             }
@@ -249,8 +249,8 @@ class OBListCell : UICollectionViewCell {
             .applyingSymbolConfiguration(UIImage.SymbolConfiguration(font: configuration.labels.primary.font))
         
         textLabel.font = configuration.labels.primary.font
-        if let attributedText: AttributedString = configuration.labels.primary.attributedText {
-            textLabel.attributedText = NSAttributedString(attributedText)
+        if let attributedText: NSAttributedString = configuration.labels.primary.attributedText {
+            textLabel.attributedText = attributedText
         } else {
             textLabel.text = configuration.labels.primary.text
         }
@@ -258,8 +258,8 @@ class OBListCell : UICollectionViewCell {
         textLabel.textColor = configuration.labels.primary.color
         
         // secondaryTextLabel.font = configuration.labels.secondary.font
-        // if let attributedText: AttributedString = configuration.labels.secondary.attributedText {
-        //     secondaryTextLabel.attributedText = NSAttributedString(attributedText)
+        // if let attributedText: NSAttributedString = configuration.labels.secondary.attributedText {
+        //     secondaryTextLabel.attributedText = attributedText
         // } else {
         //     secondaryTextLabel.text = configuration.labels.secondary.text
         // }

@@ -153,8 +153,8 @@ open class OBController : UIViewController {
         textLabel.translatesAutoresizingMaskIntoConstraints = false
         textLabel.font = configuration.textConfiguration.font
         textLabel.numberOfLines = 1
-        if let attributedText: AttributedString = configuration.textConfiguration.attributedText {
-            textLabel.attributedText = NSAttributedString(attributedText)
+        if let attributedText: NSAttributedString = configuration.textConfiguration.attributedText {
+            textLabel.attributedText = attributedText
         } else {
             textLabel.text = configuration.textConfiguration.text
         }
@@ -169,8 +169,8 @@ open class OBController : UIViewController {
         secondaryTextLabel.translatesAutoresizingMaskIntoConstraints = false
         secondaryTextLabel.font = configuration.secondaryConfiguration.font
         secondaryTextLabel.numberOfLines = 3
-        if let attributedText: AttributedString = configuration.secondaryConfiguration.attributedText {
-            secondaryTextLabel.attributedText = NSAttributedString(attributedText)
+        if let attributedText: NSAttributedString = configuration.secondaryConfiguration.attributedText {
+            secondaryTextLabel.attributedText = attributedText
         } else {
             secondaryTextLabel.text = configuration.secondaryConfiguration.text
         }
@@ -186,8 +186,8 @@ open class OBController : UIViewController {
             tertiaryTextLabel.translatesAutoresizingMaskIntoConstraints = false
             tertiaryTextLabel.font = tertiaryConfiguration.font
             tertiaryTextLabel.numberOfLines = 3
-            if let attributedText: AttributedString = tertiaryConfiguration.attributedText {
-                tertiaryTextLabel.attributedText = NSAttributedString(attributedText)
+            if let attributedText: NSAttributedString = tertiaryConfiguration.attributedText {
+                tertiaryTextLabel.attributedText = attributedText
             } else {
                 tertiaryTextLabel.text = tertiaryConfiguration.text
             }
