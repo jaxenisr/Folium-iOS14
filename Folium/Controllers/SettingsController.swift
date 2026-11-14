@@ -5,6 +5,7 @@
 //  Created by Jarrod Norwell on 3/6/2026.
 //
 
+import ExtensionsKit
 import SettingsKit
 import StoreKit
 import UIKit
