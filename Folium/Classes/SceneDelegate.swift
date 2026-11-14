@@ -44,7 +44,13 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
     private let plumSystem = PlumSystem()
     private let tomatoSystem = TomatoSystem()
 
+    override init() {
+        super.init()
+        LaunchDiagnostics.log("SceneDelegate.init complete")
+    }
+
     func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+        LaunchDiagnostics.log("SceneDelegate.willConnectTo")
         if #available(iOS 15.0, *) {
             Task.detached(priority: .background) {
                 for await result in Transaction.updates {
@@ -66,8 +72,10 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         }
         
         guard let windowScene = scene as? UIWindowScene else {
+            LaunchDiagnostics.log("SceneDelegate: scene is not a UIWindowScene")
             return
         }
+        LaunchDiagnostics.log("SceneDelegate: window scene available")
         
         let gamePopulationManager = GamePopulationManager(cherrySystem, cytrusSystem, durianSystem, grapeSystem,
                                                           kiwiSystem, lycheeSystem, mandarineSystem, mangoSystem,
@@ -76,8 +84,10 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         window = UIWindow(windowScene: windowScene)
         guard let window else {
+            LaunchDiagnostics.log("SceneDelegate: window creation failed")
             return
         }
+        LaunchDiagnostics.log("SceneDelegate: window created")
         
         let onboardingComplete: Bool = UserDefaults.standard.bool(forKey: "folium.onboardingComplete")
         
@@ -88,59 +98,82 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
                 await onboardingFlow.cameraAuthorization(controller)
             })
         }
+        LaunchDiagnostics.log("SceneDelegate: root controller created (onboarding=\(onboardingComplete))")
         
         window.tintColor = .systemIndigo
         window.makeKeyAndVisible()
+        LaunchDiagnostics.log("SceneDelegate: window visible")
         
         initializeUserDefaultsWithDefaultValues()
+        LaunchDiagnostics.log("SceneDelegate: defaults initialized")
         
         _ = Task {
-            try await directoryManager.initializeSystemDirectoriesForInitialLaunch()
+            LaunchDiagnostics.log("SceneDelegate: background init started")
+            do {
+                try await directoryManager.initializeSystemDirectoriesForInitialLaunch()
+                LaunchDiagnostics.log("SceneDelegate: directories ready")
+            } catch {
+                LaunchDiagnostics.log("SceneDelegate: directory init failed: \(error)")
+                return
+            }
             
             await cherrySystem.initializePaths()
             await cherrySystem.initializeSystem()
+            LaunchDiagnostics.log("SceneDelegate: cherry ready")
             
             await cytrusSystem.initializeLogging()
             await setSettingsForCytrus()
+            LaunchDiagnostics.log("SceneDelegate: cytrus ready")
             
             await durianSystem.initializePaths()
             await durianSystem.initializeSystem()
             await setSettingsForDurian()
+            LaunchDiagnostics.log("SceneDelegate: durian ready")
             
             await grapeSystem.initializePaths()
             await grapeSystem.initializeSystem()
             await setSettingsForGrape()
+            LaunchDiagnostics.log("SceneDelegate: grape ready")
             
             await kiwiSystem.initializePaths()
             await kiwiSystem.initializeSystem()
             await setSettingsForKiwi()
+            LaunchDiagnostics.log("SceneDelegate: kiwi ready")
             
             await lycheeSystem.initializePaths()
             await lycheeSystem.initializeSystem()
+            LaunchDiagnostics.log("SceneDelegate: lychee ready")
             
             await mandarineSystem.initializePaths()
             await mandarineSystem.initializeMemoryCards()
             await mandarineSystem.initializeSystem()
+            LaunchDiagnostics.log("SceneDelegate: mandarine ready")
             
             await mangoSystem.initializePaths()
             await mangoSystem.initializeSystem()
+            LaunchDiagnostics.log("SceneDelegate: mango ready")
             
             await plumSystem.initializePaths()
             await plumSystem.initializeSystem()
+            LaunchDiagnostics.log("SceneDelegate: plum ready")
             
             await tomatoSystem.initializePaths()
             await tomatoSystem.initializeSystem()
             await setSettingsForTomato()
+            LaunchDiagnostics.log("SceneDelegate: tomato ready")
             
             let session: AVAudioSession = AVAudioSession.sharedInstance()
             DispatchQueue.global(qos: .background).async {
                 do {
                     try session.setCategory(.playback, options: [.mixWithOthers])
                     try session.setActive(true)
+                    LaunchDiagnostics.log("SceneDelegate: audio session ready")
                 } catch {
+                    LaunchDiagnostics.log("SceneDelegate: audio session failed: \(error)")
                     print(error, error.localizedDescription)
                 }
             }
+            LaunchDiagnostics.log("SceneDelegate: background init finished")
         }
     }
 
