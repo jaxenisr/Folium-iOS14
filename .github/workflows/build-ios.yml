@@ -1027,12 +1027,36 @@ jobs:
 
       - name: Package IPA
         run: |
+          set -euo pipefail
           APP=$(find build/Folium.xcarchive/Products/Applications -maxdepth 1 -name '*.app' | head -1)
           [ -d "$APP" ] || { echo "::error::No .app found in archive"; exit 1; }
           rm -rf Payload && mkdir Payload
           cp -R "$APP" Payload/
           # Strip any leftover signatures so sideloaders / LiveContainer re-sign cleanly
           find Payload -name '_CodeSignature' -type d -prune -exec rm -rf {} +
+
+          # TrollStore preserves entitlements already present on the binary. The JIT probe in
+          # JITSupport needs dynamic-codesigning to mprotect generated code on iOS 14; the
+          # memory entitlements keep the 3DS JIT pools from hitting jetsam.
+          cat > build/Folium.entitlements <<'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>get-task-allow</key>
+              <true/>
+              <key>dynamic-codesigning</key>
+              <true/>
+              <key>com.apple.developer.kernel.increased-memory-limit</key>
+              <true/>
+              <key>com.apple.developer.kernel.extended-virtual-addressing</key>
+              <true/>
+          </dict>
+          </plist>
+          EOF
+          codesign --force --sign - --timestamp=none --entitlements build/Folium.entitlements "Payload/$(basename "$APP")"
+          codesign -d --entitlements :- "Payload/$(basename "$APP")" || true
+
           SHORT_SHA=$(git rev-parse --short HEAD)
           IPA="Folium-${SHORT_SHA}.ipa"
           zip -qry "$IPA" Payload
