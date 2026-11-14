@@ -960,6 +960,34 @@ jobs:
               raise SystemExit("::error::no core Swift sources needed patching; submodule layout changed?")
           PY
 
+      # Clang modules reject C header includes inside extern "C". libchdr's
+      # headers and Mandarine's bridge put <stdint.h> inside the extern "C"
+      # block; move those includes out so the bridging header PCH can build.
+      - name: Patch libchdr C++ module includes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          replacements = [
+              (
+                  Path("Mandarine/System/include/avocado/bridge.h"),
+                  '#ifdef __cplusplus\nextern "C" {\n#endif\n\n#include <chd.h>\n',
+                  '#include <chd.h>\n\n#ifdef __cplusplus\nextern "C" {\n#endif\n',
+              ),
+              (
+                  Path("SharedDependencies/Sources/libchdr/include/chd.h"),
+                  '#ifdef __cplusplus\nextern "C" {\n#endif\n\n#include "coretypes.h"\n',
+                  '#include "coretypes.h"\n\n#ifdef __cplusplus\nextern "C" {\n#endif\n',
+              ),
+          ]
+          for path, old, new in replacements:
+              text = path.read_text()
+              if old not in text:
+                  raise SystemExit(f"::error::unexpected header layout in {path}")
+              path.write_text(text.replace(old, new, 1))
+              print("patched", path)
+          PY
+
       - name: Build archive (unsigned)
         run: |
           EXTRA=()
