@@ -12,15 +12,15 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
 #include <sstream>
 #include <string>
 
-std::string folium_legacy_stringbuf_str(const std::basic_stringbuf<char>& buffer)
-    __asm__("__ZNKSt3__115basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEE3strEv");
-
-std::string folium_legacy_stringbuf_str(const std::basic_stringbuf<char>& buffer) {
-    return buffer.str();
-}
+// The prebuilt C++ cores and iOS 14's libc++ disagree about two out-of-line
+// stream members. iOS 14 does not export basic_filebuf's constructor or
+// basic_stringbuf's str overloads, so instantiate them into the app.
+template class std::basic_filebuf<char>;
+template class std::basic_stringbuf<char>;
 
 // libc++ hardening added __libcpp_verbose_abort after iOS 14. The prebuilt
 // cores reference it through the SDK headers, but iOS 14's libc++.1.dylib does
