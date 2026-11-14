@@ -22,6 +22,16 @@
 template class std::basic_filebuf<char>;
 template class std::basic_stringbuf<char>;
 
+// The prebuilt cores call the pre-ref-qualifier str() const. The current
+// libc++ exposes str() const& and emits a different symbol, so provide the
+// legacy entry point explicitly.
+std::string folium_legacy_stringbuf_str(const std::basic_stringbuf<char>& buffer)
+    __asm__("__ZNKSt3__115basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEE3strEv");
+
+std::string folium_legacy_stringbuf_str(const std::basic_stringbuf<char>& buffer) {
+    return buffer.str();
+}
+
 // libc++ hardening added __libcpp_verbose_abort after iOS 14. The prebuilt
 // cores reference it through the SDK headers, but iOS 14's libc++.1.dylib does
 // not export it. Keep the fatal-abort behaviour under the legacy mangled name.
