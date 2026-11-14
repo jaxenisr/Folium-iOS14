@@ -1060,17 +1060,20 @@ jobs:
             codesign --force --sign - --timestamp=none "$DYLIB"
           done
 
-          # TrollStore shows its "launch with JIT" option for any app carrying
-          # get-task-allow, then aborts the launch when trollstorehelper fails (error 3
-          # on this iOS 14.7.1 iPad). dynamic-codesigning is the entitlement the app's
-          # own probe needs, so keep it and omit get-task-allow.
+          # Launch isolation: no JIT entitlements at all. The app still maps its
+          # own __TEXT read-only at launch, so dynamic-codesigning is the remaining
+          # variable to remove before looking at the linker. Keep a normal
+          # app-identity entitlement so TrollStore does not inject its
+          # get-task-allow fallback for entitlement-less executables.
           cat > build/Folium.entitlements <<'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
           <dict>
-              <key>dynamic-codesigning</key>
-              <true/>
+              <key>application-identifier</key>
+              <string>TROLLTROLL.com.antique.Folium-iOS14</string>
+              <key>com.apple.developer.team-identifier</key>
+              <string>TROLLTROLL</string>
           </dict>
           </plist>
           EOF
@@ -1111,4 +1114,4 @@ jobs:
 
             Commit: ${{ env.SHORT_SHA }}
             Minimum iOS: 14.0
-            Bundled JIT entitlement: dynamic-codesigning (TrollStore JIT launch disabled)
+            JIT: disabled in this build (launch isolation); no get-task-allow, no dynamic-codesigning
