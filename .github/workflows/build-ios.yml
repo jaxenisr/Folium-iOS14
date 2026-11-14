@@ -1035,6 +1035,22 @@ jobs:
           # Strip any leftover signatures so sideloaders / LiveContainer re-sign cleanly
           find Payload -name '_CodeSignature' -type d -prune -exec rm -rf {} +
 
+          # Some prebuilt audio frameworks were built with an iOS 15 minimum.
+          # Lower their Mach-O and Info.plist minimums so dyld loads them on iOS 14.
+          find Payload -name '*.framework' -type d | while IFS= read -r FW; do
+            BIN="$FW/$(basename "$FW" .framework)"
+            [ -f "$BIN" ] || continue
+            MINOS=$(xcrun vtool -show-build "$BIN" 2>/dev/null | awk '/minos/ {print $2; exit}')
+            case "$MINOS" in
+              1[5-9].*|2[0-9].*)
+                xcrun vtool -set-build-version ios 14.0 14.0 -replace -output "$BIN.patched" "$BIN"
+                mv "$BIN.patched" "$BIN"
+                /usr/libexec/PlistBuddy -c "Set :MinimumOSVersion 14.0" "$FW/Info.plist" 2>/dev/null || true
+                echo "Lowered $FW from iOS $MINOS to 14.0"
+                ;;
+            esac
+          done
+
           # TrollStore preserves entitlements already present on the binary. The JIT probe in
           # JITSupport needs dynamic-codesigning to mprotect generated code on iOS 14; the
           # memory entitlements keep the 3DS JIT pools from hitting jetsam.
