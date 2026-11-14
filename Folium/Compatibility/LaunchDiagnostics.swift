@@ -10,6 +10,10 @@
 
 import Foundation
 
+private nonisolated func foliumUncaughtExceptionHandler(_ exception: NSException) {
+    LaunchDiagnostics.log("UNCAUGHT \(exception.name.rawValue): \(exception.reason ?? "no reason")")
+}
+
 nonisolated enum LaunchDiagnostics {
     private static let queue = DispatchQueue(label: "com.antique.Folium.launchDiagnostics")
 
@@ -20,10 +24,7 @@ nonisolated enum LaunchDiagnostics {
 
     static func install() {
         log("=== Folium launch ===")
-
-        NSSetUncaughtExceptionHandler { exception in
-            log("UNCAUGHT \(exception.name.rawValue): \(exception.reason ?? "no reason")")
-        }
+        NSSetUncaughtExceptionHandler(foliumUncaughtExceptionHandler)
     }
 
     static func log(_ message: String) {
