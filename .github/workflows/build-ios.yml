@@ -1051,9 +1051,19 @@ jobs:
             esac
           done
 
+          # iOS 14 enforces library validation on nested code. Sign every embedded
+          # framework and dylib before signing the app so dyld accepts them at launch.
+          find Payload -name '*.framework' -type d | while IFS= read -r FW; do
+            codesign --force --sign - --timestamp=none "$FW"
+          done
+          find Payload -name '*.dylib' -type f | while IFS= read -r DYLIB; do
+            codesign --force --sign - --timestamp=none "$DYLIB"
+          done
+
           # TrollStore preserves entitlements already present on the binary. The JIT probe in
           # JITSupport needs dynamic-codesigning to mprotect generated code on iOS 14; the
-          # memory entitlements keep the 3DS JIT pools from hitting jetsam.
+          # kernel memory entitlements are intentionally omitted because they are not needed
+          # for the JIT and can be rejected by older kernels.
           cat > build/Folium.entitlements <<'EOF'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -1062,10 +1072,6 @@ jobs:
               <key>get-task-allow</key>
               <true/>
               <key>dynamic-codesigning</key>
-              <true/>
-              <key>com.apple.developer.kernel.increased-memory-limit</key>
-              <true/>
-              <key>com.apple.developer.kernel.extended-virtual-addressing</key>
               <true/>
           </dict>
           </plist>
@@ -1094,11 +1100,17 @@ jobs:
           name: xcodebuild-log
           path: build/xcodebuild.log
 
-      - name: Publish release (optional)
-        if: ${{ github.event.inputs.make_release == 'true' }}
+      - name: Publish release
+        if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event.inputs.make_release == 'true') }}
         uses: softprops/action-gh-release@v2
         with:
           tag_name: build-${{ github.run_number }}
-          name: Folium build ${{ github.run_number }} (${{ env.SHORT_SHA }})
+          name: Folium iOS 14 build ${{ github.run_number }} (${{ env.SHORT_SHA }})
           files: ${{ env.IPA }}
-          prerelease: true
+          prerelease: false
+          body: |
+            iOS 14.0+ build of Folium, ad-hoc signed for TrollStore.
+
+            Commit: ${{ env.SHORT_SHA }}
+            Minimum iOS: 14.0
+            Bundled JIT entitlements: get-task-allow, dynamic-codesigning
