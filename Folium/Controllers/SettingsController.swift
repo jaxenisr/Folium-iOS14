@@ -182,7 +182,7 @@ class SettingsController : UICollectionViewController {
         }
         
         let headerCellRegistration = UICollectionView.SupplementaryRegistration<UICollectionViewListCell>(elementKind: UICollectionView.elementKindSectionHeader) { supplementaryView, elementKind, indexPath in
-            var contentConfiguration = UIListContentConfiguration.extraProminentInsetGroupedHeader()
+            var contentConfiguration = UIListContentConfiguration.foliumExtraProminentInsetGroupedHeader()
             
             if let dataSource = self.dataSource {
                 let snapshot = dataSource.snapshot()
@@ -459,11 +459,11 @@ extension SettingsController : SettingDelegate {
             return
         }
         
-        guard let sectionIdentifier: SettingsHeaders = dataSource.sectionIdentifier(for: indexPath.section) else {
+        var snapshot = dataSource.snapshot()
+        guard indexPath.section < snapshot.sectionIdentifiers.count else {
             return
         }
-        
-        var snapshot = dataSource.snapshot()
+        let sectionIdentifier: SettingsHeaders = snapshot.sectionIdentifiers[indexPath.section]
         let item = snapshot.itemIdentifiers(inSection: sectionIdentifier)[indexPath.item]
         
         guard let tabController: TabController = tabBarController as? TabController else {

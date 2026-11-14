@@ -302,10 +302,12 @@ class GamesController : UICollectionViewController {
         let tomatoCell: UICollectionView.CellRegistration<TomatoCell, TomatoGame> = CellManager.Library.tomatoCell(viewController: self)
         
         let supplementaryCell: UICollectionView.SupplementaryRegistration<UICollectionViewListCell> = UICollectionView.SupplementaryRegistration(elementKind: .header) { supplementaryView, elementKind, indexPath in
-            var contentConfiguration = UIListContentConfiguration.extraProminentInsetGroupedHeader()
-            if let dataSource: UICollectionViewDiffableDataSource<String, Game> = self.dataSource,
-               let system: String = dataSource.sectionIdentifier(for: indexPath.section) {
-                contentConfiguration.text = system
+            var contentConfiguration = UIListContentConfiguration.foliumExtraProminentInsetGroupedHeader()
+            if let dataSource: UICollectionViewDiffableDataSource<String, Game> = self.dataSource {
+                let sections = dataSource.snapshot().sectionIdentifiers
+                if indexPath.section < sections.count {
+                    contentConfiguration.text = sections[indexPath.section]
+                }
             }
             supplementaryView.contentConfiguration = contentConfiguration
         }
