@@ -167,7 +167,7 @@ open class OBControllerWithList : UIViewController {
         collectionView = UICollectionView(frame: .zero,
                                           collectionViewLayout: UICollectionViewCompositionalLayout(sectionProvider: { sectionIndex, layoutEnvironment in
             guard let dataSource = self.dataSource,
-                  let _: String = dataSource.sectionIdentifier(for: sectionIndex) else {
+                  sectionIndex < dataSource.snapshot().sectionIdentifiers.count else {
                 return nil
             }
             
@@ -235,10 +235,12 @@ open class OBControllerWithList : UIViewController {
         }
         
         let supplementaryCell: UICollectionView.SupplementaryRegistration<UICollectionViewListCell> = UICollectionView.SupplementaryRegistration(elementKind: UICollectionView.elementKindSectionHeader) { supplementaryView, elementKind, indexPath in
-            var contentConfiguration = UIListContentConfiguration.extraProminentInsetGroupedHeader()
-            if let dataSource: UICollectionViewDiffableDataSource<String, CellConfiguration> = self.dataSource,
-               let system: String = dataSource.sectionIdentifier(for: indexPath.section) {
-                contentConfiguration.text = system
+            var contentConfiguration = UIListContentConfiguration.foliumExtraProminentInsetGroupedHeader()
+            if let dataSource: UICollectionViewDiffableDataSource<String, CellConfiguration> = self.dataSource {
+                let sections = dataSource.snapshot().sectionIdentifiers
+                if indexPath.section < sections.count {
+                    contentConfiguration.text = sections[indexPath.section]
+                }
             }
             supplementaryView.contentConfiguration = contentConfiguration
         }
