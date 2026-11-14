@@ -269,8 +269,8 @@ final class SceneDelegate: UIResponder, UIWindowSceneDelegate {
         
         for (system, defaultValues) in systemsWithDefaultValues {
             for (key, value) in defaultValues {
-                if userDefaults.value(forKey: "\(system.string.lowercased).\(key)") == nil {
-                    userDefaults.set(value, forKey: "\(system.string.lowercased).\(key)")
+                if userDefaults.value(forKey: "\(system.string.lowercased()).\(key)") == nil {
+                    userDefaults.set(value, forKey: "\(system.string.lowercased()).\(key)")
                 }
             }
         }
