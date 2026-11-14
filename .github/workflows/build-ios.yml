@@ -935,6 +935,31 @@ jobs:
           fi
           ls "$INC"
 
+      # The core submodules still use iOS 16's URL.appending(component:).
+      # Swap it for the iOS 14-compatible appendingPathComponent equivalent.
+      - name: Patch core submodules for iOS 14
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+
+          cores = ["Cherry", "Cytrus", "Durian", "Grape", "Kiwi", "Lychee",
+                   "Mandarine", "Mango", "Plum", "Tomato"]
+          changed = []
+          for core in cores:
+              for path in Path(core).rglob("*.swift"):
+                  text = path.read_text()
+                  new = re.sub(r"\.appending\(component:\s*([^,)]+?)(?:\s*,\s*directoryHint:\s*[^)]+)?\)",
+                               r".appendingPathComponent(\1)", text)
+                  new = new.replace(".localizedLowercase", ".lowercased")
+                  if new != text:
+                      path.write_text(new)
+                      changed.append(str(path))
+                      print("patched", path)
+          if not changed:
+              raise SystemExit("::error::no core Swift sources needed patching; submodule layout changed?")
+          PY
+
       - name: Build archive (unsigned)
         run: |
           EXTRA=()
