@@ -986,6 +986,16 @@ jobs:
                   raise SystemExit(f"::error::unexpected header layout in {path}")
               path.write_text(text.replace(old, new, 1))
               print("patched", path)
+
+          # bridge.cpp used to get the CHD declarations through bridge.h.
+          bridge_cpp = Path("Mandarine/System/bridge.cpp")
+          text = bridge_cpp.read_text()
+          if '#include <chd.h>' not in text:
+              anchor = '#include "avocado/bridge.h"\n'
+              if anchor not in text:
+                  raise SystemExit(f"::error::unexpected include layout in {bridge_cpp}")
+              bridge_cpp.write_text(text.replace(anchor, anchor + '#include <chd.h>\n', 1))
+              print("patched", bridge_cpp)
           PY
 
       - name: Build archive (unsigned)
