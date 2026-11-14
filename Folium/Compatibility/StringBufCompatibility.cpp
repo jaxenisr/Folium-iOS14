@@ -12,9 +12,9 @@
 #include <sstream>
 #include <string>
 
-extern "C" std::string folium_legacy_stringbuf_str(const std::basic_stringbuf<char>& buffer)
+std::string folium_legacy_stringbuf_str(const std::basic_stringbuf<char>& buffer)
     __asm__("__ZNKSt3__115basic_stringbufIcNS_11char_traitsIcEENS_9allocatorIcEEE3strEv");
 
-extern "C" std::string folium_legacy_stringbuf_str(const std::basic_stringbuf<char>& buffer) {
+std::string folium_legacy_stringbuf_str(const std::basic_stringbuf<char>& buffer) {
     return buffer.str();
 }
