@@ -751,7 +751,7 @@ jobs:
       - name: "TXM JIT: install patched oaknut into SharedDependencies"
         if: ${{ github.event.inputs.txm_jit != 'false' }}
         run: |
-          DEST=build/SourcePackages/checkouts/SharedDependencies/Sources/oaknut/include/oaknut/code_block.hpp
+          DEST=$GITHUB_WORKSPACE/SharedDependencies/Sources/oaknut/include/oaknut/code_block.hpp
           test -f "$DEST" || { echo "::error::$DEST not found (SharedDependencies layout changed?)"; exit 1; }
           # SwiftPM checks packages out read-only
           chmod -R u+w "$(dirname "$DEST")"
@@ -833,7 +833,7 @@ jobs:
           PY
 
           # 3) dynarmic wants Boost headers; reuse the ones bundled in SharedDependencies.
-          BOOST_INC="$PWD/build/SourcePackages/checkouts/SharedDependencies/Sources/boost/include"
+          BOOST_INC="$GITHUB_WORKSPACE/SharedDependencies/Sources/boost/include"
           test -f "$BOOST_INC/boost/variant.hpp"
           BCFG="$RUNNER_TEMP/boostcfg"; mkdir -p "$BCFG"
           cat > "$BCFG/BoostConfig.cmake" <<CMAKE
@@ -858,7 +858,7 @@ jobs:
             -DCMAKE_SYSTEM_NAME=iOS \
             -DCMAKE_OSX_SYSROOT=iphoneos \
             -DCMAKE_OSX_ARCHITECTURES=arm64 \
-            -DCMAKE_OSX_DEPLOYMENT_TARGET=16.0 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=14.0 \
             -DCMAKE_TRY_COMPILE_TARGET_TYPE=STATIC_LIBRARY \
             -DBUILD_SHARED_LIBS=OFF \
             -DCMAKE_POLICY_DEFAULT_CMP0167=NEW \
@@ -911,7 +911,7 @@ jobs:
       # Add a forwarding header for whichever one is missing.
       - name: magic_enum include compatibility shim
         run: |
-          INC=build/SourcePackages/checkouts/SharedDependencies/Sources/magic_enum/include
+          INC=$GITHUB_WORKSPACE/SharedDependencies/Sources/magic_enum/include
           if [ -f "$INC/magic_enum/magic_enum.hpp" ] && [ ! -f "$INC/magic_enum.hpp" ]; then
             echo '#include "magic_enum/magic_enum.hpp"' > "$INC/magic_enum.hpp"
             echo "Added $INC/magic_enum.hpp"
@@ -925,7 +925,7 @@ jobs:
       # Cytrus still does #include <dds_ktx.h>. Add a forwarding header.
       - name: dds_ktx include compatibility shim
         run: |
-          INC=build/SourcePackages/checkouts/SharedDependencies/Sources/dds_ktx/include
+          INC=$GITHUB_WORKSPACE/SharedDependencies/Sources/dds_ktx/include
           if [ -f "$INC/dds-ktx.h" ] && [ ! -f "$INC/dds_ktx.h" ]; then
             echo '#include "dds-ktx.h"' > "$INC/dds_ktx.h"
             echo "Added $INC/dds_ktx.h"
