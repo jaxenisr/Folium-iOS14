@@ -2196,7 +2196,7 @@
 				LIBRARY_SEARCH_PATHS = "";
 				MARKETING_VERSION = 2.2;
 				OTHER_LDFLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.antique.Folium-iOS";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.antique.Folium-iOS14";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
@@ -2247,7 +2247,7 @@
 				LIBRARY_SEARCH_PATHS = "";
 				MARKETING_VERSION = 2.2;
 				OTHER_LDFLAGS = "";
-				PRODUCT_BUNDLE_IDENTIFIER = "com.antique.Folium-iOS";
+				PRODUCT_BUNDLE_IDENTIFIER = "com.antique.Folium-iOS14";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
