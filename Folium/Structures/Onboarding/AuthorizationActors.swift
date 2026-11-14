@@ -17,7 +17,6 @@ struct AuthorizationActors {
         MicrophoneAuthorization()
     }
     
-    @available(iOS 16, *)
     var deprecatedMicrophoneAuthorization: DeprecatedMicrophoneAuthorization {
         DeprecatedMicrophoneAuthorization()
     }

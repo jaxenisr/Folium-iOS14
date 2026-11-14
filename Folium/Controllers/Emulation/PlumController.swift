@@ -36,8 +36,8 @@ class PlumController : ControlsController {
         
         let settingsConfiguration: FoliumButtonConfiguration = .configuration(.medium, .capsule, UIImage(systemName: "ellipsis"), nil, .medium)
         settingsButton = .button(with: settingsConfiguration,
-                                 actions: ({ _ in }, { _ in }), UIMenu(preferredElementSize: .medium, children: [
-                                    UIDeferredMenuElement.uncached { completion in
+                                 actions: ({ _ in }, { _ in }), UIMenu.compat(children: [
+                                    UIDeferredMenuElement { completion in
                                         guard let plumGame: PlumGame = self.game as? PlumGame else {
                                             completion([])
                                             return

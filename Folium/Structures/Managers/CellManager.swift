@@ -196,12 +196,20 @@ struct CellManager {
                     }
                 }
                 
-                cell.accessories = [
-                    UICellAccessory.label(text: title),
-                    UICellAccessory.popUpMenu(UIMenu(children: children.sorted(by: { lhs, rhs in
-                        lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
-                    })))
-                ]
+                let menu: UIMenu = UIMenu.compat(children: children.sorted(by: { lhs, rhs in
+                    lhs.title.localizedCaseInsensitiveCompare(rhs.title) == .orderedAscending
+                }))
+                var accessories: [UICellAccessory] = [UICellAccessory.label(text: title)]
+                if #available(iOS 16.0, *) {
+                    accessories.append(UICellAccessory.popUpMenu(menu))
+                } else {
+                    let menuButton: UIButton = UIButton(type: .system)
+                    menuButton.setImage(UIImage(systemName: "ellipsis.circle"), for: .normal)
+                    menuButton.menu = menu
+                    menuButton.showsMenuAsPrimaryAction = true
+                    accessories.append(UICellAccessory.customView(configuration: UICellAccessory.CustomViewConfiguration(customView: menuButton, placement: .trailing())))
+                }
+                cell.accessories = accessories
             }
         }
         
@@ -296,7 +304,7 @@ struct CellManager {
                     backgroundCofiguration.visualEffect = effect
                     cell.backgroundConfiguration = backgroundCofiguration
                 } else {
-                    cell.backgroundConfiguration = cell.defaultBackgroundConfiguration()
+                    cell.backgroundConfiguration = UIBackgroundConfiguration.listGroupedCell()
                 }
                 
                 var contentConfiguration = UIListContentConfiguration.cell()

@@ -37,8 +37,8 @@ class TomatoController : ControlsController {
         
         let settingsConfiguration: FoliumButtonConfiguration = .configuration(.medium, .capsule, UIImage(systemName: "ellipsis"), nil, .medium)
         settingsButton = .button(with: settingsConfiguration,
-                                 actions: ({ _ in }, { _ in }), UIMenu(children: [
-                                    UIDeferredMenuElement.uncached { completion in
+                                 actions: ({ _ in }, { _ in }), UIMenu.compat(children: [
+                                    UIDeferredMenuElement { completion in
                                         guard let tomatoGame: TomatoGame = self.game as? TomatoGame else {
                                             completion([])
                                             return
@@ -49,14 +49,14 @@ class TomatoController : ControlsController {
                                         
                                         Task {
                                             completion([
-                                                UIMenu(options: .displayInline, preferredElementSize: .medium, children: [
-                                                    UIMenu(title: "Load", image: UIImage(systemName: "square.and.arrow.up"), children: await indexes.asyncMap  { index in
+                                                UIMenu.compat(options: .displayInline, children: [
+                                                    UIMenu.compat(title: "Load", image: UIImage(systemName: "square.and.arrow.up"), children: await indexes.asyncMap  { index in
                                                         UIAction.async(title: "State \(index + 1)", attributes: await tomatoGame.tomatoSystem.saveStateExists(for: index) ? [] : .disabled) { action in
                                                             await tomatoGame.tomatoSystem.saveStateLoad(for: index)
                                                             self.notifySuccess()
                                                         }
                                                     }.reversed()),
-                                                    UIMenu(title: "Save", image: UIImage(systemName: "square.and.arrow.down"), children: await indexes.asyncMap { index in
+                                                    UIMenu.compat(title: "Save", image: UIImage(systemName: "square.and.arrow.down"), children: await indexes.asyncMap { index in
                                                         UIAction.async(title: "State \(index + 1)") { action in
                                                             if await tomatoGame.tomatoSystem.saveStateExists(for: index) {
                                                                 let alertController: UIAlertController = UIAlertController(title: "Overwrite Save State?",
@@ -76,7 +76,7 @@ class TomatoController : ControlsController {
                                                             }
                                                         }
                                                     }.reversed()),
-                                                    UIMenu(title: "Delete", image: UIImage(systemName: "trash"), options: .destructive, children: await indexes.asyncMap { index in
+                                                    UIMenu.compat(title: "Delete", image: UIImage(systemName: "trash"), options: .destructive, children: await indexes.asyncMap { index in
                                                         UIAction.async(title: "State \(index + 1)", attributes: await tomatoGame.tomatoSystem.saveStateExists(for: index) ? .destructive : .disabled) { action in
                                                             let alertController: UIAlertController = UIAlertController(title: "Delete Save State?",
                                                                                                                        message: "Deleting this save state is destructive and cannot be undone",
@@ -92,7 +92,7 @@ class TomatoController : ControlsController {
                                                         }
                                                     }.reversed())
                                                 ]),
-                                                UIMenu(options: .displayInline, preferredElementSize: .medium, children: [
+                                                UIMenu.compat(options: .displayInline, children: [
                                                     UIAction.async(title: await tomatoGame.tomatoSystem.paused ? "Resume" : "Pause",
                                                                    image: UIImage(systemName: await tomatoGame.tomatoSystem.paused ? "play.fill" : "pause.fill")) { action in
                                                                        if await tomatoGame.tomatoSystem.paused {

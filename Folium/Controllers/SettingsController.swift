@@ -97,23 +97,23 @@ class SettingsController : UICollectionViewController {
             navigationItem.title = "Settings"
         }
         
-        navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "ellipsis"), menu: UIMenu(children: [
-            UIMenu(options: .displayInline, children: [
+        navigationItem.rightBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "ellipsis"), menu: UIMenu.compat(children: [
+            UIMenu.compat(options: .displayInline, children: [
                 UIAction.compat(title: "Application", image: UIImage(systemName: "app.grid")) { action in
                     self.selectedSnapshot = .application
                 }
             ]),
-            UIMenu(title: "Bandai", image: UIImage(systemName: "cpu"), children: [
+            UIMenu.compat(title: "Bandai", image: UIImage(systemName: "cpu"), children: [
                 UIAction.compat(title: "WonderSwan", subtitle: "+ WonderSwan Color") { action in
                     self.selectedSnapshot = .durian
                 }
             ]),
-            UIMenu(title: "Coleco", image: UIImage(systemName: "cpu"), children: [
+            UIMenu.compat(title: "Coleco", image: UIImage(systemName: "cpu"), children: [
                 UIAction.compat(title: "ColecoVision", attributes: .disabled) { action in
                     self.selectedSnapshot = .cherry
                 }
             ]),
-            UIMenu(title: "Nintendo", image: UIImage(systemName: "cpu"), children: [
+            UIMenu.compat(title: "Nintendo", image: UIImage(systemName: "cpu"), children: [
                 UIAction.compat(title: "3DS", subtitle: "+ New 3DS") { action in
                     self.selectedSnapshot = .cytrus
                 },
@@ -133,12 +133,12 @@ class SettingsController : UICollectionViewController {
                     self.selectedSnapshot = .lychee
                 }
             ]),
-            UIMenu(title: "SEGA", image: UIImage(systemName: "cpu"), children: [
+            UIMenu.compat(title: "SEGA", image: UIImage(systemName: "cpu"), children: [
                 UIAction.compat(title: "Genesis", subtitle: "+ Mega Drive", attributes: .disabled) { action in
                     self.selectedSnapshot = .plum
                 }
             ]),
-            UIMenu(title: "Sony", image: UIImage(systemName: "cpu"), children: [
+            UIMenu.compat(title: "Sony", image: UIImage(systemName: "cpu"), children: [
                 UIAction.compat(title: "PlayStation 1", attributes: .disabled) { action in
                     self.selectedSnapshot = .mandarine
                 }

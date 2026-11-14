@@ -37,8 +37,8 @@ class MangoController : ControlsController {
         
         let settingsConfiguration: FoliumButtonConfiguration = .configuration(.medium, .capsule, UIImage(systemName: "ellipsis"), nil, .medium)
         settingsButton = .button(with: settingsConfiguration,
-                                 actions: ({ _ in }, { _ in }), UIMenu(children: [
-                                    UIDeferredMenuElement.uncached { completion in
+                                 actions: ({ _ in }, { _ in }), UIMenu.compat(children: [
+                                    UIDeferredMenuElement { completion in
                                         guard let mangoGame: MangoGame = self.game as? MangoGame else {
                                             completion([])
                                             return
@@ -49,14 +49,14 @@ class MangoController : ControlsController {
                                         
                                         Task {
                                             completion([
-                                                UIMenu(options: .displayInline, preferredElementSize: .medium, children: [
-                                                    UIMenu(title: "Load", image: UIImage(systemName: "square.and.arrow.up"), children: await indexes.asyncMap  { index in
+                                                UIMenu.compat(options: .displayInline, children: [
+                                                    UIMenu.compat(title: "Load", image: UIImage(systemName: "square.and.arrow.up"), children: await indexes.asyncMap  { index in
                                                         UIAction.async(title: "State \(index + 1)", attributes: await mangoGame.mangoSystem.saveStateExists(for: index) ? [] : .disabled) { action in
                                                             await mangoGame.mangoSystem.saveStateLoad(for: index)
                                                             self.notifySuccess()
                                                         }
                                                     }.reversed()),
-                                                    UIMenu(title: "Save", image: UIImage(systemName: "square.and.arrow.down"), children: await indexes.asyncMap { index in
+                                                    UIMenu.compat(title: "Save", image: UIImage(systemName: "square.and.arrow.down"), children: await indexes.asyncMap { index in
                                                         UIAction.async(title: "State \(index + 1)") { action in
                                                             if await mangoGame.mangoSystem.saveStateExists(for: index) {
                                                                 let alertController: UIAlertController = UIAlertController(title: "Overwrite Save State?",
@@ -76,7 +76,7 @@ class MangoController : ControlsController {
                                                             }
                                                         }
                                                     }.reversed()),
-                                                    UIMenu(title: "Delete", image: UIImage(systemName: "trash"), options: .destructive, children: await indexes.asyncMap { index in
+                                                    UIMenu.compat(title: "Delete", image: UIImage(systemName: "trash"), options: .destructive, children: await indexes.asyncMap { index in
                                                         UIAction.async(title: "State \(index + 1)", attributes: await mangoGame.mangoSystem.saveStateExists(for: index) ? .destructive : .disabled) { action in
                                                             let alertController: UIAlertController = UIAlertController(title: "Delete Save State?",
                                                                                                                        message: "Deleting this save state is destructive and cannot be undone",
@@ -92,7 +92,7 @@ class MangoController : ControlsController {
                                                         }
                                                     }.reversed())
                                                 ]),
-                                                UIMenu(options: .displayInline, preferredElementSize: .medium, children: [
+                                                UIMenu.compat(options: .displayInline, children: [
                                                     UIAction.async(title: await mangoGame.mangoSystem.paused ? "Resume" : "Pause",
                                                                    image: UIImage(systemName: await mangoGame.mangoSystem.paused ? "play.fill" : "pause.fill")) { action in
                                                                        if await mangoGame.mangoSystem.paused {

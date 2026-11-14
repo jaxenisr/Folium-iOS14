@@ -972,7 +972,7 @@ jobs:
               (
                   Path("Mandarine/System/include/avocado/bridge.h"),
                   '#ifdef __cplusplus\nextern "C" {\n#endif\n\n#include <chd.h>\n',
-                  '#include <chd.h>\n\n#ifdef __cplusplus\nextern "C" {\n#endif\n',
+                  'typedef struct _chd_file chd_file;\n\n#ifdef __cplusplus\nextern "C" {\n#endif\n',
               ),
               (
                   Path("SharedDependencies/Sources/libchdr/include/chd.h"),
