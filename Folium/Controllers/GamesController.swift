@@ -23,6 +23,13 @@ enum HostingOrJoiningState {
 }
 
 class GamesController : UICollectionViewController {
+    private var networkBarButtonItem: UIBarButtonItem? {
+        if #available(iOS 16.0, *) {
+            return navigationItem.trailingItemGroups.last?.barButtonItems.first
+        }
+
+        return navigationItem.rightBarButtonItems?.first
+    }
     var currentlyImportingSystemFile: String? = nil
     var importFileType: ImportFileType = .game
     
@@ -136,9 +143,7 @@ class GamesController : UICollectionViewController {
             navigationItem.title = "Games"
         }
         
-        navigationItem.trailingItemGroups = [
-            UIBarButtonItemGroup(barButtonItems: [
-                UIBarButtonItem(image: UIImage(systemName: "plus"),
+        let plusBarButtonItem: UIBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "plus"),
                                 primaryAction: UIAction(image: UIImage(systemName: "opticaldisc")) { action in
                                     self.importFileType = .game
                                     
@@ -146,22 +151,22 @@ class GamesController : UICollectionViewController {
                                     documentPickerController.allowsMultipleSelection = true
                                     documentPickerController.delegate = self
                                     self.present(documentPickerController, animated: true)
-                                }),
-                UIBarButtonItem(image: UIImage(systemName: "ellipsis"), menu: UIMenu(children: [
-                    UIDeferredMenuElement.uncached { completion in
+                                })
+        let ellipsisBarButtonItem: UIBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "ellipsis"), menu: UIMenu.compat(children: [
+                    UIDeferredMenuElement { completion in
                         completion([
-                            UIMenu(options: .displayInline, children: [
-                                UIMenu(title: "Bandai", image: UIImage(systemName: "cpu"), children: [
+                            UIMenu.compat(options: .displayInline, children: [
+                                UIMenu.compat(title: "Bandai", image: UIImage(systemName: "cpu"), children: [
                                     UIAction.compat(title: "WonderSwan", subtitle: "+ WonderSwan Color") { action in
                                         self.selectedSnapshot = .durian
                                     }
                                 ]),
-                                UIMenu(title: "Coleco", image: UIImage(systemName: "cpu"), children: [
+                                UIMenu.compat(title: "Coleco", image: UIImage(systemName: "cpu"), children: [
                                     UIAction.compat(title: "ColecoVision") { action in
                                         self.selectedSnapshot = .cherry
                                     }
                                 ]),
-                                UIMenu(title: "Nintendo", image: UIImage(systemName: "cpu"), children: [
+                                UIMenu.compat(title: "Nintendo", image: UIImage(systemName: "cpu"), children: [
                                     UIAction.compat(title: "3DS", subtitle: "+ New 3DS") { action in
                                         self.selectedSnapshot = .cytrus
                                     },
@@ -181,18 +186,18 @@ class GamesController : UICollectionViewController {
                                         self.selectedSnapshot = .lychee
                                     }
                                 ]),
-                                UIMenu(title: "SEGA", image: UIImage(systemName: "cpu"), children: [
+                                UIMenu.compat(title: "SEGA", image: UIImage(systemName: "cpu"), children: [
                                     UIAction.compat(title: "Genesis", subtitle: "+ Mega Drive") { action in
                                         self.selectedSnapshot = .plum
                                     }
                                 ]),
-                                UIMenu(title: "Sony", image: UIImage(systemName: "cpu"), children: [
+                                UIMenu.compat(title: "Sony", image: UIImage(systemName: "cpu"), children: [
                                     UIAction.compat(title: "PlayStation 1") { action in
                                         self.selectedSnapshot = .mandarine
                                     }
                                 ])
                             ]),
-                            UIMenu(options: .displayInline, children: [
+                            UIMenu.compat(options: .displayInline, children: [
                                 UIAction.compat(title: "Artic Base", subtitle: "Stream a game from a 3DS", image: UIImage(systemName: "wifi")) { action in
                                     self.presentArticBasePrompt()
                                 }
@@ -212,10 +217,8 @@ class GamesController : UICollectionViewController {
                         ])
                     }
                 ]))
-            ], representativeItem: nil),
-            UIBarButtonItemGroup(barButtonItems: [
-                UIBarButtonItem(image: UIImage(systemName: "network"), menu: UIMenu(children: [
-                    UIDeferredMenuElement.uncached { completion in
+        let networkBarButtonItem: UIBarButtonItem = UIBarButtonItem(image: UIImage(systemName: "network"), menu: UIMenu.compat(children: [
+                    UIDeferredMenuElement { completion in
                         guard let advertiser: MCNearbyServiceAdvertiser = self.advertiser,
                               let browser: MCNearbyServiceBrowser = self.browser,
                               let session: MCSession = self.session else {
@@ -261,7 +264,7 @@ class GamesController : UICollectionViewController {
                         }
                         
                         if UserDefaults.standard.bool(forKey: "extraFeaturesPurchased") {
-                            completion([UIMenu(options: .displayInline, preferredElementSize: .medium, children: children)])
+                            completion([UIMenu.compat(options: .displayInline, children: children)])
                         } else {
                             completion([
                                 UIAction.compat(title: "Extra Features", subtitle: "Requires Purchase", image: UIImage(systemName: "bag")) { action in
@@ -274,10 +277,15 @@ class GamesController : UICollectionViewController {
                         }
                     }
                 ]))
-            ], representativeItem: nil)
-        ]
+
         if #available(iOS 16.0, *) {
+            navigationItem.trailingItemGroups = [
+                UIBarButtonItemGroup(barButtonItems: [plusBarButtonItem, ellipsisBarButtonItem], representativeItem: nil),
+                UIBarButtonItemGroup(barButtonItems: [networkBarButtonItem], representativeItem: nil)
+            ]
             navigationItem.style = .browser
+        } else {
+            navigationItem.rightBarButtonItems = [plusBarButtonItem, ellipsisBarButtonItem, networkBarButtonItem]
         }
         view.backgroundColor = .systemBackground
         
@@ -945,12 +953,12 @@ extension GamesController : UIDocumentPickerDelegate, UINavigationControllerDele
                 .mango,
                 .plum,
                 .tomato:
-            gamesDirectoryURL.append(component: selectedSnapshot.string)
+            gamesDirectoryURL.appendPathComponent(selectedSnapshot.string)
         default:
             break
         }
         
-        gamesDirectoryURL.append(component: importFileType.directory)
+        gamesDirectoryURL.appendPathComponent(importFileType.directory)
         
         Task {
             await urls.asyncForEach { url in
@@ -1000,12 +1008,12 @@ extension GamesController : MCNearbyServiceBrowserDelegate {
         Task { @MainActor in
             hostingOrJoiningState = .disconnected
             
-            let barButtonItem: UIBarButtonItem? = self.navigationItem.trailingItemGroups.last?.barButtonItems.first
+            let barButtonItem: UIBarButtonItem? = self.networkBarButtonItem
             if let barButtonItem: UIBarButtonItem {
                 barButtonItem.tintColor = if hostingOrJoiningState == .disconnected {
                     nil
                 } else {
-                    .tintColor
+                    .foliumTint
                 }
             }
         }
@@ -1022,12 +1030,12 @@ extension GamesController : MCSessionDelegate {
                 break
             }
             
-            let barButtonItem: UIBarButtonItem? = self.navigationItem.trailingItemGroups.last?.barButtonItems.first
+            let barButtonItem: UIBarButtonItem? = self.networkBarButtonItem
             if let barButtonItem: UIBarButtonItem {
                 barButtonItem.tintColor = if hostingOrJoiningState == .disconnected {
                     nil
                 } else {
-                    .tintColor
+                    .foliumTint
                 }
             }
         }

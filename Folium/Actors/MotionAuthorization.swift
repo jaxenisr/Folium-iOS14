@@ -14,7 +14,7 @@ actor MotionAuthorization : AuthorizationProtocol {
     
     func authorize() async -> Bool {
         await withCheckedContinuation { continuation in
-            pedometer.queryPedometerData(from: .now, to: .now) { data, error in
+            pedometer.queryPedometerData(from: Date(), to: Date()) { data, error in
                 continuation.resume(returning: error.isNil)
             }
         }

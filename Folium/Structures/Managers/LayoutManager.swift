@@ -39,7 +39,7 @@ struct LayoutManager {
         let item: NSCollectionLayoutItem = NSCollectionLayoutItem(layoutSize: itemSize)
         
         let group: NSCollectionLayoutGroup = NSCollectionLayoutGroup.horizontal(layoutSize: itemFullWidthSize,
-                                                                                repeatingSubitem: item,
+                                                                                subitem: item,
                                                                                 count: itemCount)
         group.interItemSpacing = NSCollectionLayoutSpacing.fixed(20.0)
         
@@ -69,7 +69,7 @@ struct LayoutManager {
         let item: NSCollectionLayoutItem = NSCollectionLayoutItem(layoutSize: itemSize)
         
         let group: NSCollectionLayoutGroup = NSCollectionLayoutGroup.horizontal(layoutSize: itemFullWidthSize,
-                                                                                repeatingSubitem: item,
+                                                                                subitem: item,
                                                                                 count: itemCount)
         group.interItemSpacing = NSCollectionLayoutSpacing.fixed(20.0)
         

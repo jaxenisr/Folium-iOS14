@@ -111,7 +111,7 @@ enum ApplicationSettingsItems : String, CaseIterable {
                 TapSetting(key: rawValue,
                            title: title,
                            details: details,
-                           color: .tintColor,
+                           color: .foliumTint,
                            handler: { controller in
                     @available(iOS 15.0, *)
                     func purchase(_ completionHandler: @escaping () -> Void) async {
@@ -146,7 +146,7 @@ enum ApplicationSettingsItems : String, CaseIterable {
                                 }
                             }),
                             (FoliumButtonConfiguration.configuration(.large, .capsule, nil, "Purchase",
-                                                                  .large, .tintColor, inverseColor: true), { controller in
+                                                                  .large, .foliumTint, inverseColor: true), { controller in
                                                                       _ = Task {
                                                                           if #available(iOS 15.0, *) {
                                                                               await purchase {

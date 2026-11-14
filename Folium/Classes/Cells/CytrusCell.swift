@@ -52,9 +52,9 @@ class CytrusCell : GameCell {
         label.text = game.details.fileName
         secondaryLabel.text = "\(game.details.fileSize) • \(game.details.fileExtension.uppercased())"
         
-        button.menu = UIMenu(children: [
-            UIMenu(title: "Artwork", image: UIImage(systemName: "photo"), children: [
-                UIDeferredMenuElement.uncached { completion in
+        button.menu = UIMenu.compat(children: [
+            UIMenu.compat(title: "Artwork", image: UIImage(systemName: "photo"), children: [
+                UIDeferredMenuElement { completion in
                     var elements: [UIMenuElement] = [
                         UIAction.compat(title: "Import", image: UIImage(systemName: "arrow.down.circle")) { action in
                             let imagePickerController: UIImagePickerController = .init()
@@ -86,7 +86,7 @@ class CytrusCell : GameCell {
                     completion(elements)
                 }
             ]),
-            UIMenu(options: .displayInline, children: [
+            UIMenu.compat(options: .displayInline, children: [
                 UIAction.compat(title: "Delete", image: UIImage(systemName: "minus.circle"), attributes: .destructive) { action in
                     let parentDirectoryURL: URL = game.details.fileURL.deletingLastPathComponent()
                     

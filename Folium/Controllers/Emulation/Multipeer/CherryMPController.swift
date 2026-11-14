@@ -41,7 +41,7 @@ class CherryMPController : ControlsController {
         
         let settingsConfiguration: FoliumButtonConfiguration = .configuration(.medium, .capsule, UIImage(systemName: "ellipsis"), nil, .medium)
         settingsButton = .button(with: settingsConfiguration,
-                                 actions: ({ _ in }, { _ in }), UIMenu(preferredElementSize: .medium, children: []))
+                                 actions: ({ _ in }, { _ in }), UIMenu.compat(children: []))
         guard let settingsButton else {
             return
         }

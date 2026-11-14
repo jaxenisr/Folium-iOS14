@@ -170,3 +170,19 @@ extension UIAction {
         }
     }
 }
+
+
+extension UIMenu {
+    /// The subtitle initializer is iOS 15+, so use a plain menu on iOS 14.
+    static func compat(title: String = "", subtitle: String? = nil, image: UIImage? = nil,
+                       identifier: UIMenu.Identifier? = nil, options: UIMenu.Options = [],
+                       children: [UIMenuElement] = []) -> UIMenu {
+        if #available(iOS 15.0, *), let subtitle {
+            return UIMenu(title: title, subtitle: subtitle, image: image,
+                          identifier: identifier, options: options, children: children)
+        }
+
+        return UIMenu(title: title, image: image, identifier: identifier,
+                      options: options, children: children)
+    }
+}

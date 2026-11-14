@@ -20,7 +20,6 @@ actor MicrophoneAuthorization : AuthorizationProtocol {
     }
 }
 
-@available(iOS 16, *)
 actor DeprecatedMicrophoneAuthorization : AuthorizationProtocol {
     func authorize() async -> Bool {
         await withCheckedContinuation { continuation in

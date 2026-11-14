@@ -38,7 +38,7 @@ class WhatsNewController : OBControllerWithList {
         let cells: [String : [CellConfiguration]] = [
             "Emulation" : [
                 CellConfiguration(image: UIImage(systemName: "arrow.up.forward.app")?
-                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration(paletteColors: [.label])), labels: (
+                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration.palette([.label])), labels: (
                         LabelConfiguration(alignment: .left,
                                            color: .label,
                                            font: UIFont.regular(from: .headline),
@@ -52,7 +52,7 @@ class WhatsNewController : OBControllerWithList {
             ],
             "Library" : [
                 CellConfiguration(image: UIImage(systemName: "character.cursor.ibeam")?
-                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration(paletteColors: [.label])), labels: (
+                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration.palette([.label])), labels: (
                         LabelConfiguration(alignment: .left,
                                            color: .label,
                                            font: UIFont.regular(from: .headline),
@@ -64,7 +64,7 @@ class WhatsNewController : OBControllerWithList {
                                            text: "Fixed an issue where game titles for Nintendo 3DS games would be read from the file name instead of the embedded header")
                     )),
                 CellConfiguration(image: UIImage(systemName: "hand.point.up.left")?
-                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration(paletteColors: [.label])), labels: (
+                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration.palette([.label])), labels: (
                         LabelConfiguration(alignment: .left,
                                            color: .label,
                                            font: UIFont.regular(from: .headline),
@@ -78,7 +78,7 @@ class WhatsNewController : OBControllerWithList {
             ],
             "On-Screen Controls" : [
                 CellConfiguration(image: UIImage(systemName: "l.joystick.tilt.right")?
-                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration(paletteColors: [.label])), labels: (
+                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration.palette([.label])), labels: (
                         LabelConfiguration(alignment: .left,
                                            color: .label,
                                            font: UIFont.regular(from: .headline),
@@ -90,7 +90,7 @@ class WhatsNewController : OBControllerWithList {
                                            text: "Adds functional left and right analog sticks to the PlayStation 1 emulation system with added support for diagonal movement")
                     )),
                 CellConfiguration(image: UIImage(systemName: "square.and.arrow.down")?
-                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration(paletteColors: [.label])), labels: (
+                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration.palette([.label])), labels: (
                         LabelConfiguration(alignment: .left,
                                            color: .label,
                                            font: UIFont.regular(from: .headline),
@@ -104,7 +104,7 @@ class WhatsNewController : OBControllerWithList {
             ],
             "Settings" : [
                 CellConfiguration(image: UIImage(systemName: "gearshape")?
-                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration(paletteColors: [.label])), labels: (
+                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration.palette([.label])), labels: (
                         LabelConfiguration(alignment: .left,
                                            color: .label,
                                            font: UIFont.regular(from: .headline),
@@ -116,7 +116,7 @@ class WhatsNewController : OBControllerWithList {
                                            text: "Adds a new selection setting to the Application settings to set the system that will be displayed upon application launch")
                     )),
                 CellConfiguration(image: UIImage(systemName: "gearshape")?
-                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration(paletteColors: [.label])), labels: (
+                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration.palette([.label])), labels: (
                         LabelConfiguration(alignment: .left,
                                            color: .label,
                                            font: UIFont.regular(from: .headline),
@@ -128,7 +128,7 @@ class WhatsNewController : OBControllerWithList {
                                            text: "Adds new Game Boy, Game Boy Advance and Game Boy Color settings allowing users to set several graphics related settings")
                     )),
                 CellConfiguration(image: UIImage(systemName: "gearshape")?
-                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration(paletteColors: [.label])), labels: (
+                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration.palette([.label])), labels: (
                         LabelConfiguration(alignment: .left,
                                            color: .label,
                                            font: UIFont.regular(from: .headline),
@@ -140,7 +140,7 @@ class WhatsNewController : OBControllerWithList {
                                            text: "Adds new Nintendo 3DS settings allowing users to change a plethora of settings from audio to core, graphics and more")
                     )),
                 CellConfiguration(image: UIImage(systemName: "gearshape")?
-                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration(paletteColors: [.label])), labels: (
+                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration.palette([.label])), labels: (
                         LabelConfiguration(alignment: .left,
                                            color: .label,
                                            font: UIFont.regular(from: .headline),
@@ -154,7 +154,7 @@ class WhatsNewController : OBControllerWithList {
             ],
             "Systems" : [
                 CellConfiguration(image: UIImage(systemName: "star")?
-                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration(paletteColors: [.label])), labels: (
+                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration.palette([.label])), labels: (
                         LabelConfiguration(alignment: .left,
                                            color: .label,
                                            font: UIFont.regular(from: .headline),
@@ -166,7 +166,7 @@ class WhatsNewController : OBControllerWithList {
                                            text: "Replaced the project Cherry is built on from Gearcoleco over to MesenCE and rewrote a portion of the bridging code")
                     )),
                 CellConfiguration(image: UIImage(systemName: "star")?
-                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration(paletteColors: [.label])), labels: (
+                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration.palette([.label])), labels: (
                         LabelConfiguration(alignment: .left,
                                            color: .label,
                                            font: UIFont.regular(from: .headline),
@@ -178,7 +178,7 @@ class WhatsNewController : OBControllerWithList {
                                            text: "Updated the project Cytrus is built on to the latest version adding new features and improving performance\n\nSettings to come soon")
                     )),
                 CellConfiguration(image: UIImage(systemName: "arrow.up.forward.app")?
-                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration(paletteColors: [.label])), labels: (
+                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration.palette([.label])), labels: (
                         LabelConfiguration(alignment: .left,
                                            color: .label,
                                            font: UIFont.regular(from: .headline),
@@ -190,7 +190,7 @@ class WhatsNewController : OBControllerWithList {
                                            text: "Adds support for Ape Escape and Gran Turismo 2, changed from Avocado to my own fork with a large portion of code rewritten")
                     )),
                 CellConfiguration(image: UIImage(systemName: "arrow.up.forward.app")?
-                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration(paletteColors: [.label])), labels: (
+                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration.palette([.label])), labels: (
                         LabelConfiguration(alignment: .left,
                                            color: .label,
                                            font: UIFont.regular(from: .headline),
@@ -202,7 +202,7 @@ class WhatsNewController : OBControllerWithList {
                                            text: "Adds support for CHD, IMG and ISO game file formats with support for artwork retrieval and caching, where available")
                     )),
                 CellConfiguration(image: UIImage(systemName: "arrow.up.forward.app")?
-                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration(paletteColors: [.label])), labels: (
+                    .applyingSymbolConfiguration(UIImage.SymbolConfiguration.palette([.label])), labels: (
                         LabelConfiguration(alignment: .left,
                                            color: .label,
                                            font: UIFont.regular(from: .headline),
